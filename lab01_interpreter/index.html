@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Interpreter</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github.min.css" media="screen" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github-dark.min.css" media="screen and (prefers-color-scheme: dark)" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.5.1/github-markdown.min.css">
+  <style>
+	.markdown-body {
+		box-sizing: border-box;
+		min-width: 200px;
+		max-width: 980px;
+		margin: 0 auto;
+		padding: 45px;
+	}
+
+	@media (max-width: 767px) {
+		.markdown-body {
+			padding: 15px;
+		}
+	}
+
+  .snippet pre {
+    margin-bottom: .1em;
+  }
+
+  .snippet-path {
+    font-size: 0.8em;
+    font-style: italic;
+    text-align: right;
+  }
+  </style>
+</head>
+<body class="markdown-body">
+<div id="container">
+<main>
+<p class="updated">Last updated on <time datetime=2024-02-20T17:57:01>Tuesday, February 20, 2024</time></p>
+<h1><a href="#lab-01---interpreter" id="lab-01---interpreter">Lab 01 - Interpreter</a></h1>
+<p>Welcome to the Compiler course 2024!</p>
+<p>In this first lab, you will implement an interpreter for the Alpine language, the language for which we will write the entire compiler during the semester.</p>
+<h2><a href="#preparing-the-environment" id="preparing-the-environment">Preparing the environment</a></h2>
+<p>We will use the following tools, make sure to install them before starting the lab:</p>
+<ul>
+<li><code>scala</code>, <code>sbt</code>, …: The whole project will be done in Scala. Hence, you need to have Scala and sbt installed on your machine. You can see a tutorial for installing the toolchain <a href="https://docs.scala-lang.org/getting-started/index.html">here</a>.</li>
+<li>If you use Visual Studio Code, you can install the <code>Metals</code> extension to have a better experience with Scala. You can find an up-to-date tutorial to install it <a href="https://scalameta.org/metals/docs/editors/vscode/">here</a>.</li>
+<li>If you use IntelliJ, you can install the Scala plugin to have a better experience with Scala. You can find an up-to-date tutorial to install it <a href="https://www.jetbrains.com/help/idea/get-started-with-scala.html">here</a>.</li>
+<li>If you use another editor, feel free to check <a href="https://scalameta.org/metals/docs/">Metals&rsquo; documentation</a> to see if there is a plugin for your editor.</li>
+</ul>
+<h3><a href="#common-issues" id="common-issues">Common issues</a></h3>
+<h4><a href="#no-autocompletion-on-visual-studio-code-vsc" id="no-autocompletion-on-visual-studio-code-vsc">No autocompletion on Visual Studio Code (VSC)</a></h4>
+<p>If the autocompletion does not work, check the following on VSC:</p>
+<ul>
+<li>Metals is indeed installed.</li>
+<li><code>build.sbt</code> file is at the root of your project. This means that the folder that you open inside Visual Studio Code is the folder that contains the <code>build.sbt</code> file.</li>
+<li>Make sure to import the build inside Metals. You can do it by either pressing <code>Ctrl+Shift+P</code> and typing <code>Import build</code> or clicking on the &ldquo;Metals&rdquo; tab in the left panel and then clicking on the &ldquo;Import build&rdquo; under the &ldquo;Build commands&rdquo; panel.
+<ul>
+<li>A loading icon should appear at the bottom-right and should disappear after a few seconds. If it does not, you can click on the icon and see what is the issue.</li>
+<li>If it does not work, you can select &ldquo;Clean and restart build server&rdquo; and click on &ldquo;Reset workspace&rdquo; in the pop up.</li>
+<li>If the issue persists, you can try to restart Visual Studio Code.</li>
+<li>If it still does not work, you can see the logs by clicking on the &ldquo;Check logs&rdquo; button under the &ldquo;Help and feedback&rdquo; pane in the &ldquo;Metals&rdquo; tab to inspect it.</li>
+</ul>
+</li>
+</ul>
+<h2><a href="#obtaining-the-lab-files" id="obtaining-the-lab-files">Obtaining the lab files</a></h2>
+<p>To get the lab files, clone this repository. To do so, open a terminal and run the following command:</p>
+<pre><code class="language-console">$ git clone https://github.com/epfl-lara/compiler2024-labs-public.git
+</code></pre>
+<p>Then the <code>interpreter</code> folder contains this week lab files.</p>
+<h2><a href="#submit-your-work" id="submit-your-work">Submit your work</a></h2>
+<p>We are using an automatic grading infrastructure to grade your work. You will submit your work on Moodle and automatically receive your grade after a few minutes. To submit your work, go to this week assignment on Moodle and upload the following file:</p>
+<ul>
+<li><code>src/main/scala/alpine/evaluation/Interpreter.scala</code></li>
+</ul>
+<p>When you submit your work, it will create a &ldquo;Draft&rdquo; submission. You then have to click on the &ldquo;Submit&rdquo; button to submit your work. DO NOT FORGET TO DO THIS STEP! You will receive an email confirming that your work has been submitted. If you do not receive this email, it means that your work has not been properly submitted.</p>
+<h2><a href="#general-idea-of-the-project" id="general-idea-of-the-project">General idea of the project</a></h2>
+<p>Let&rsquo;s recall the global idea of a simple compiler&rsquo;s pipeline:</p>
+<pre><code>Source code -&gt; Lexer -&gt; Parser -&gt; Type checking -&gt; Assembly generation
+</code></pre>
+<p>To recap,</p>
+<ul>
+<li>The <code>Lexer</code> is responsible for transforming the source code into a list of tokens (words, numbers, symbols, etc.). It is the first step of the pipeline.</li>
+<li>The <code>Parser</code> is responsible for transforming the list of tokens into an abstract syntax tree (AST). It is the second step of the pipeline.</li>
+<li>The <code>Type checking</code> is responsible for checking that the program is well-typed. It is the third step of the pipeline.</li>
+<li>The <code>Assembly generation</code> is responsible for generating the machine code. It is the last step of the pipeline.</li>
+</ul>
+<p>This week, we will not do a <em>compiler</em> but an <em>interpreter</em>. The difference is that we will not generate machine code but execute the program directly. Hence, the pipeline is simplified:</p>
+<pre><code>Source code -&gt; Lexer -&gt; Parser -&gt; Type checker -&gt; Interpreter
+</code></pre>
+<p>Here, the <code>Interpreter</code> is responsible for executing the program. It is the last step of the pipeline. Note that the interpreter interprets a <code>TypedProgram</code> and not a <code>Program</code>. This means that the type checker is run on the AST to solve references to types and variables.</p>
+<h3><a href="#lab-formalities" id="lab-formalities">Lab formalities</a></h3>
+<p>In this lab, you will modify only the <code>evaluation/Interpreter.scala</code> file. You can obviously check other files to have a better understanding of the project, but you should not modify them.</p>
+<p>To run the program, you can use the following SBT command (inside the <code>sbt</code> terminal launched from the root of the project, i.e., where the <code>build.sbt</code> file is located):</p>
+<pre><code class="language-console">run -i &lt;input_file&gt;
+</code></pre>
+<p>This will run the interpreter on the file <code>&lt;input_file&gt;</code> (an Alpine source file).</p>
+<p>We provide you a test suite (comprising unit, integration, and end-to-end tests) to check your work. To run it use the following SBT command:</p>
+<pre><code class="language-console">test
+</code></pre>
+<p>These also are the tests on which your work will be graded.</p>
+<h3><a href="#alpine-language" id="alpine-language"><em>Alpine</em> language</a></h3>
+<p>You can find a description of the language inside the <a href="./language_desc.md"><code>language_desc.md</code></a>/<a href="./language_desc.html">&rsquo;language_desc.html`</a> file. It contains a small overview of the language, its syntax, and its semantics.</p>
+<h3><a href="#the-ast" id="the-ast">The AST</a></h3>
+<p>Let&rsquo;s recall the pipeline seen above. The <code>Parser</code> is responsible for transforming the list of tokens into an Abstract Syntax Tree (AST).</p>
+<p>The interpreter will traverse the AST produced by the parser and execute the program.</p>
+<p>The AST is a tree that represents the structure of the program. It is a data structure that is used to represent the program in a way that is easy to manipulate. For instance, the following program:</p>
+<pre><code>let x = 1
+</code></pre>
+<p>is represented by the following AST:</p>
+<pre><code>IArray(
+  Binding(
+    x, // identifier
+    None, // explicit type on the definition
+    Some( // initialisation content (i.e. the 1), if exists
+      IntegerLiteral(
+        1, // literal value
+        &lt;input&gt;:1:9-1:10 // position of the literal
+      )
+    ), 
+    &lt;input&gt;:1:1-1:10 // position of the binding
+  )
+)
+</code></pre>
+<p>If you have taken the CS-214 Software Construction course: yes, it looks similar to the evaluator we have seen, though more complete (and therefore complex).</p>
+<p>You can find the definitions of all the types of the AST in the <code>alpine.ast.Trees</code> file (<code>src/main/scala/alpine/ast/Trees.scala</code> file.)</p>
+<h2><a href="#implementing-the-interpreter" id="implementing-the-interpreter">Implementing the interpreter</a></h2>
+<p>You will implement the interpreter in the <code>alpine.evaluation.Interpreter</code> class (<code>src/main/scala/alpine/evaluation/Interpreter.scala</code> file.)</p>
+<h3><a href="#using-sbt" id="using-sbt">Using SBT</a></h3>
+<p>To run files with the interpreter, you can use the following SBT command (inside the <code>sbt</code> terminal launched from the root of the project, i.e., where the <code>build.sbt</code> file is located):</p>
+<pre><code>run -i &lt;input_file&gt;
+</code></pre>
+<p>To test your code, you can use the following SBT command:</p>
+<pre><code>test
+</code></pre>
+<h3><a href="#step-0-entrypoint-provided" id="step-0-entrypoint-provided">Step 0: Entrypoint (provided)</a></h3>
+<p>The entrypoint of an <em>Alpine program</em> is its <code>main</code> variable (i.e. variable called <code>main</code>.) The interpreter has to find the expression contained in the <code>main</code> variable and interpret it.</p>
+<p>Inside the interpreter class, you will find the <code>run</code> method that is the entry point of the <em>interpreter</em>. The variable of type <code>TypedProgram</code> contains the AST of the <em>Alpine</em> program to interpret.</p>
+<div class='snippet'>
+<pre><code class="language-scala">/** Evaluates the entry point of the program. */
+def run(): Int =
+  val e = syntax.entry.getOrElse(throw Panic(&quot;no entry point&quot;))
+  try
+    e.visit(this)(using Context())
+    0
+  catch case e: Interpreter.Exit =&gt;
+    e.status
+</code></pre>
+<p class='snippet-path'>src/main/scala/alpine/evaluation/Interpreter.scala</p>
+</div>
+<p>Note that the <code>run</code> method is already implemented. It calls the <code>visit</code> method on the expression contained in the <code>main</code> variable which can be retrieved by calling the <code>entry</code> method on the <code>TypedProgram</code> instance.</p>
+<p>The general idea is that the interpreter will successively visit the nodes of the AST and execute the program while visiting.</p>
+<h3><a href="#step-1-parenthesized-expressions" id="step-1-parenthesized-expressions">Step 1: Parenthesized expressions</a></h3>
+<p>A parenthesized expression is an expression that is enclosed in parentheses. In <em>Alpine</em>, a parenthesized expression is written as <code>(&lt;expression&gt;)</code>. The interpreter should evaluate parenthesized expressions when it visits a <code>ParenthesizedExpression</code> node. To do so, implement the function <code>visitParenthesizedExpression</code> in the <code>Interpreter</code> class, that should evaluate to the value of the expression.</p>
+<h3><a href="#step-2-records" id="step-2-records">Step 2: Records</a></h3>
+<p>A record is a collection of fields. Each field has a name and a value, which can be of any type. The record type is a way to group several values together. See it as a <code>data class</code> in Kotlin, a <code>struct</code> in C, a <code>case class</code> in Scala, a <code>record</code> in Java, etc.</p>
+<p>In <em>Alpine</em>, a record (e.g. <code>#pair(x: 1, y: 2)</code>) is uniquely identified by:</p>
+<ul>
+<li>its name (i.e. identifier, e.g. <code>pair</code> for the record <code>#pair</code>)</li>
+<li>its <em>arity</em> (i.e. the number of fields it has, e.g. here <code>#pair</code> has 2)</li>
+<li>the types of the fields it contains (e.g. here <code>Int</code> and <code>Int</code>)</li>
+<li>its field labels (e.g. here <code>x</code> and <code>y</code>)</li>
+</ul>
+<p>The interpreter should be able to create record instances when it visits a <code>Record</code> node. To do so, implement the function <code>visitRecord</code> in the <code>Interpreter</code> class, that should evaluate to a <code>Record</code> value.</p>
+<h3><a href="#step-3-conditional-expressions" id="step-3-conditional-expressions">Step 3: Conditional expressions</a></h3>
+<p>A conditional expression is an expression that evaluates to a value depending on a condition. In <em>Alpine</em>, a conditional expression is written as <code>if &lt;condition&gt; then &lt;then-branch&gt; else &lt;else-branch&gt;</code>. The interpreter should evaluate conditional expressions when it visits a <code>Conditional</code> node:</p>
+<ul>
+<li>evaluate/visit the <code>condition</code></li>
+<li>if the condition evaluates to <code>true</code>, evaluate/visit the <code>then-branch</code> (<code>successCase</code>) and return its value</li>
+<li>if the condition evaluates to <code>false</code>, evaluate/visit the <code>else-branch</code> (<code>failureCase</code>) and return its value</li>
+</ul>
+<p>You can now implement the function <code>visitConditional</code> in the <code>Interpreter</code> class.</p>
+<h3><a href="#step-4-ascribed-expressions" id="step-4-ascribed-expressions">Step 4: Ascribed expressions</a></h3>
+<p>An ascribed expression is an expression that is annotated with a type. In <em>Alpine</em>, an ascribed expression is written as <code>&lt;expression&gt; [@ | @! | @?] &lt;type&gt;</code>. The interpreter should evaluate ascribed expressions when it visits an <code>AscriptionExpression</code> node.</p>
+<p>There is multiple ways of changing the type of an expression:</p>
+<ol>
+<li><strong>Widening</strong>: when the type of the expression is a subtype of the ascribed type (). For example, <code>42 @ Int</code> is valid because <code>42</code> is a subtype of <code>Int</code>. Moreover, <code>42 @ Any</code> is valid because <code>Int</code> is a subtype of <code>Any</code>. This is called <em>widening</em> and is always safe and valid.</li>
+<li><strong>Unconditional narrowing</strong>: Narrowing is less safe. It is when the type of the expression is a supertype of the ascribed type. For example, <code>42 @! Float</code> is invalid because <code>Int</code> is not a supertype of <code>Float</code>. <code>let x: Int | Float = 42; x @! Int</code> on the other hand is valid, because <code>Int | Float</code> is a supertype of <code>Int</code>. This is called <em>narrowing</em> and is not always safe and valid.
+In <em>Alpine</em>, narrowing can be done using the <code>@!</code> operator. If the ascribed type is not a subtype of the type of the expression, the interpreter should raise a <code>Panic</code>.</li>
+<li><strong>Safe narrowing</strong>: Instead of forcing such a narrowing, one can use the <code>@?</code> operator. It returns either a <code>#none</code> or a <code>#some(T)</code> depending on whether the narrowing is valid or not.</li>
+</ol>
+<p>For example:</p>
+<pre><code class="language-swift">let x = 42 @ Any
+let y = x @? Int
+</code></pre>
+<p><code>y</code> will evaluate to <code>#some(42)</code>. If the ascribed type is not a subtype of the type of the expression, the result is <code>#none</code>, e.g.</p>
+<pre><code class="language-swift">let x = 42 @ Any
+let y = x @? Float
+</code></pre>
+<p><code>y</code> will evaluate to <code>#none</code>.</p>
+<p>Implement now the function <code>visitAscribedExpression</code> in the <code>Interpreter</code> class:</p>
+<ul>
+<li>In case of a widening, return the value of the expression</li>
+<li>In case of an unconditional narrowing, check if the ascribed type is a subtype of the type of the expression. If it is, return the value of the expression. Otherwise, raise a <code>Panic</code>.</li>
+<li>In case of a safe narrowing, return <code>#some(value)</code> if the ascribed type is a subtype of the type of the expression, and <code>#none</code> otherwise.</li>
+</ul>
+<p>Note that <code>#none</code> and <code>#some</code> are built-in records, and are defined in the <code>Value</code> object, in the <code>evaluation/Value.scala</code> file.</p>
+<h3><a href="#step-5-functions" id="step-5-functions">Step 5: Functions</a></h3>
+<p>A function is a block of code that can be called. In <em>Alpine</em>, a function is defined using the <code>fun</code> keyword. For example, the following code defines a function <code>add</code> that takes two arguments <code>x</code> and <code>y</code> and returns their sum:</p>
+<pre><code class="language-swift">fun add(_ x: Int, _ y: Int) -&gt; Int {
+  x + y
+}
+</code></pre>
+<p>Note that by construction of our interpreter, it will never visit a <code>Function</code> node (since we are interpreting directly the entrypoint.)</p>
+<p>However, we may encounter the definition of functions with a <code>Let</code>/<code>Biding</code> node:</p>
+<pre><code class="language-swift">let add = (_ x: Int, _ y: Int) -&gt; Int {
+  x + y
+}
+</code></pre>
+<p>Such functions are called lambda functions (or anonymous functions). The interpreter should evaluate lambda functions when it visits a <code>Let</code> node. Moreover, these lambda functions can be defined inside a function in itself and has capture semantics. For example:</p>
+<pre><code class="language-swift">fun adder(_ x: Int, _ y: Int) -&gt; Int {
+  let add = (_ z: Int) -&gt; Int {
+    x + z // x is captured from the outer scope
+  } {
+    add(y)
+  }
+}
+let main = print(adder(3, 4))
+</code></pre>
+<p>has the same behavior as the previous <code>add</code> function.</p>
+<p>Here, the lambda captures the <code>x</code> variable from the outer scope. This is what the lambda &ldquo;captured&rdquo;.</p>
+<p>The <code>_</code> in the function definitions are optional argument names. They can be used to make the code more readable by giving names to the arguments for interface/documentation purposes, that are are different from the variable names used in the body.</p>
+<p>For instance:</p>
+<pre><code class="language-swift">fun scale(by f: Int) -&gt; Int {
+  10 * f
+}
+let main = print(scale(by: 2))
+</code></pre>
+<p>It lets the programer give more information about the argument to the caller, without having to use this name inside the function.</p>
+<p>When the wildcard <code>_</code> is used, you can not specify the name of the argument when calling the function. For instance, the following code is invalid:</p>
+<pre><code class="language-swift">fun scale(_ f: Int) -&gt; Int {
+  10 * f
+}
+let main = print(scale(f: 2))
+</code></pre>
+<p>This is the correct way to call the function:</p>
+<pre><code class="language-swift">fun scale(_ f: Int) -&gt; Int {
+  10 * f
+}
+let main = print(scale(2))
+</code></pre>
+<h4><a href="#step-51-applications" id="step-51-applications">Step 5.1: Applications</a></h4>
+<p>An application is the act of calling a function. In <em>Alpine</em>, we differentiate applications in three categories:</p>
+<ol>
+<li>Standard function call (<code>Application</code>): e.g. <code>add(1, 2)</code></li>
+<li>Binary operator call (<code>InfixApplication</code>): e.g. <code>1 + 2</code> which is equivalent to <code>iadd(1, 2)</code> (<code>iadd</code> is a built-in function)</li>
+<li>Unary operator call (<code>PrefixApplication</code>): e.g. <code>-1</code> which is equivalent to <code>ineg(1)</code> (<code>ineg</code> is a built-in function)</li>
+</ol>
+<p>You should evaluate first:</p>
+<ul>
+<li>the function i.e., retrieve the function node from the context using the identifier</li>
+<li>the arguments i.e., evaluate/visit the arguments (call by value semantic)</li>
+</ul>
+<p>Then, you should call the function on the arguments: you should use the <code>call</code> helper function.</p>
+<h4><a href="#step-52-call-function" id="step-52-call-function">Step 5.2: <code>call</code> function</a></h4>
+<p>Let&rsquo;s implement the <code>call</code> function.</p>
+<p>The implementation for all the built-in functions is provided, you can take inspiration from it.</p>
+<p>Your task is to implement the function for the following cases:</p>
+<ul>
+<li>the function is not a built-in function and is not a lambda function</li>
+<li>the function is not a built-in function but is a lambda function</li>
+</ul>
+<p>In each case, the <code>context</code> needs to be updated with the new bindings.</p>
+<div class="warn">
+<p>In lambdas, do not forget about the captures!</p>
+</div>
+<h3><a href="#step-6-let-bindings" id="step-6-let-bindings">Step 6: Let bindings</a></h3>
+<p>A let binding is how to define a new variable with a new block. We are already familiar with the top-level let binding (<code>Binding</code> node) but let&rsquo;s see the <code>Let</code> node.</p>
+<p>In <em>Alpine</em>, a let binding is written as:</p>
+<pre><code class="language-swift">let x = 1 {
+  x + 1
+}
+</code></pre>
+<p>and here evaluates to <code>2</code>.</p>
+<p>In other words, a <code>Let</code> is a <code>Binding</code> with a body that is executed with the new binding in the context.</p>
+<p>To do so, implement the function <code>visitLet</code> in the <code>Interpreter</code> class, that should:</p>
+<ul>
+<li>evaluate/visit the <code>definition</code> of the <code>Binding</code>.</li>
+<li>evaluate/visit the body of the <code>Let</code> with the new <code>Binding</code>.</li>
+</ul>
+<p>Note that the <code>Let</code> has call-by value semantics (i.e. the definition of the <code>Binding</code> is evaluated before evaluating the body of the <code>Let</code> and every subsequent reference to that new variable makes reference to the value to which the definition was evaluated.)</p>
+<h3><a href="#step-7-pattern-matching" id="step-7-pattern-matching">Step 7: Pattern matching</a></h3>
+<p>Pattern matching is a way to match a value against a pattern. In <em>Alpine</em>, a pattern matching looks like:</p>
+<pre><code class="language-swift">match &lt;scrutinee&gt; {
+  case &lt;pattern&gt; then &lt;expression&gt;
+  // …
+}
+</code></pre>
+<p>For instance,</p>
+<pre><code class="language-swift">match #person(age: 1) {
+  case #person(age: 1) then 1
+  case #person(age: 2) then 2
+  case _ then -1
+}
+</code></pre>
+<p><code>#person(age: 1)</code> is the scrutinee and <code>#person(age: 1)</code>, <code>#person(age: 2)</code> and <code>_</code> are the patterns. Here, the expression evaluates to <code>1</code>.</p>
+<p>A pattern can be recursively constructed with the following elements:</p>
+<ul>
+<li>A wildcard (<code>_</code>): matches any value</li>
+<li>An exact value: matches the exact value</li>
+<li>A record: matches a record with the same name and the same fields</li>
+</ul>
+<p>Moreover, bindings can be defined in the patterns. For instance:</p>
+<pre><code class="language-swift">match someValue {
+  case let p: #person(age: Int) then p.age &gt;= 2
+  case _ then false
+}
+</code></pre>
+<p>In this case, the first expression of the first case is evaluated with a new binding: <code>p</code> is bound to the record <code>#person</code> of type <code>#person(age: Int)</code> (i.e., here, the scrutinee value).</p>
+<p>For instance, if <code>someValue</code> was <code>#person(age: 1)</code>, the first case would be executed and the expression would evaluate to <code>false</code> (because <code>1 &gt;= 2</code> evaluates to false because <code>p.age = 1</code>.) If <code>someValue</code> was not a <code>#person</code> record, the second case would be executed and the expression would evaluate to <code>false</code>.</p>
+<p>Similarly, you can have <code>let</code> inside records too:</p>
+<pre><code class="language-swift">match someValue {
+  case #person(age: let n) then n &gt;= 2
+  case _ then false
+}
+</code></pre>
+<p>and this has the same behavior as the previous example.</p>
+<p>Similar to the <code>Let</code> node, the <code>Match</code> node has call-by value semantics (i.e., the scrutinee is first evaluated to a value before executing the <code>match</code>).</p>
+<p>If the scrutinee does not match any pattern, the interpreter should raise a <code>Panic</code>.</p>
+<p>If the scrutinee matches multiple patterns, the first pattern that matches is chosen.</p>
+<p>Note as well that patterns can contain expressions. For instance, the following code is valid:</p>
+<pre><code class="language-swift">match #person(age: 2) {
+  case #person(age: 1) then 1
+  case #person(age: 1 + 1) then 2
+  case _ then -1
+}
+</code></pre>
+<p>and evaluates to <code>2</code>.</p>
+<p>So expressions in patterns should be evaluated before matching.</p>
+<h4><a href="#step-71-visiting-the-match-node" id="step-71-visiting-the-match-node">Step 7.1: Visiting the <code>Match</code> node</a></h4>
+<p>To implement the pattern matching, implement the helper function <code>visitMatch</code> in the <code>Interpreter</code> class, that should:</p>
+<ul>
+<li>evaluate/visit the <code>scrutinee</code></li>
+<li>evaluate/visit the <code>cases</code> and return the value of the first case that matches the scrutinee</li>
+</ul>
+<p>You can use the <code>matches</code> function to check if a pattern matches a value. <code>matches</code> returns either <code>None</code> if the pattern does not match the value, or <code>Some(bindings)</code> if the pattern matches the value. The <code>bindings</code> is a map from the variable identifiers to the values they are bound to, and of type <code>Frame</code> (that is a <code>Map[symbols.Name, Value]</code>.)</p>
+<p>These bindings should be used to evaluate the case return expression.</p>
+<h4><a href="#step-62-implementing-matches" id="step-62-implementing-matches">Step 6.2: Implementing <code>matches</code></a></h4>
+<p><code>matches</code> makes a call to either:</p>
+<ul>
+<li><code>matchesWildcard</code></li>
+<li><code>matchesValue</code></li>
+<li><code>matchesRecord</code></li>
+<li><code>matchesBinding</code></li>
+</ul>
+<p>depending on the type of the pattern.</p>
+<ul>
+<li><code>matchesWildcard</code> matches any value and returns an empty <code>Frame</code></li>
+<li><code>matchesValue</code> matches the exact value and returns an empty <code>Frame</code></li>
+<li><code>matchesBinding</code> matches a binding and returns a <code>Frame</code> with the bindings if any. Be careful, the type of the binding must match as well.</li>
+<li><code>matchesRecord</code> matches a record with the same name and the same fields, and returns a <code>Frame</code> with the bindings if any. Note that the fields of the record can be expressions and that the patterns for the fields should be recursively matched. Be careful, the record type must match as well (you can use <code>Pattern.record#dynamicType</code> and <code>structurallyMatches</code>.)</li>
+</ul>
+<h3><a href="#step-8-lambdas" id="step-8-lambdas">Step 8: Lambdas</a></h3>
+<p>We have seen lambda functions. However, we have not implemented the <code>visitLambda</code> method.</p>
+<p>Implement the function <code>visitLambda</code> in the <code>Interpreter</code> class, that should:</p>
+<ul>
+<li>return a <code>Lambda</code> value</li>
+<li>update the <code>context</code> with the new bindings and specify a new <code>Frame</code> for the captures.</li>
+</ul>
+<div class="hint">
+<p>As a reminder, the captures are the variables that are used in the lambda but are not defined in the lambda (i.e., whose values comes from the environment outside of the lambda). For instance, in the following code:</p>
+<pre><code class="language-swift">let x = 1
+let add = (_ y: Int) -&gt; Int {
+  x + y
+}
+</code></pre>
+<p><code>x</code> is a capture of the <code>add</code> lambda.</p>
+<p>Check the <code>Context.flattened</code>method while implementing the captures.</p>
+</div>
+<h3><a href="#grammar" id="grammar">Grammar</a></h3>
+<p>In this section, we give a list of built-in functions and a summary of the tree types you will work with.</p>
+<h4><a href="#built-in-functions" id="built-in-functions">Built-in functions</a></h4>
+<p>Here is a list of all the built-in functions, provided for reference:</p>
+<ul>
+<li><code>equality(a: Any, b: Any) -&gt; Bool</code>: returns <code>true</code> if <code>a</code> and <code>b</code> are equal, <code>false</code> otherwise (<code>a == b</code>)</li>
+<li><code>inequality(a: Any, b: Any) -&gt; Bool</code>: returns <code>true</code> if <code>a</code> and <code>b</code> are not equal, <code>false</code> otherwise (<code>a != b</code>)</li>
+<li><code>lnot(a: Bool) -&gt; Bool</code>: returns <code>true</code> if <code>a</code> is <code>false</code>, <code>false</code> otherwise (<code>!a</code>)</li>
+<li><code>land(a: Bool, b: Bool) -&gt; Bool</code>: returns <code>true</code> if <code>a</code> and <code>b</code> are <code>true</code>, <code>false</code> otherwise (<code>a &amp;&amp; b</code>)</li>
+<li><code>lor(a: Bool, b: Bool) -&gt; Bool</code>: returns <code>true</code> if <code>a</code> or <code>b</code> is <code>true</code>, <code>false</code> otherwise (<code>a || b</code>)</li>
+<li><code>ineg(a: Int) -&gt; Int</code>: returns the negation of <code>a</code> (<code>-a</code>)</li>
+<li><code>iadd(a: Int, b: Int) -&gt; Int</code>: returns the sum of <code>a</code> and <code>b</code> (<code>a + b</code>)</li>
+<li><code>isub(a: Int, b: Int) -&gt; Int</code>: returns the difference of <code>a</code> and <code>b</code> (<code>a - b</code>)</li>
+<li><code>imul(a: Int, b: Int) -&gt; Int</code>: returns the product of <code>a</code> and <code>b</code> (<code>a * b</code>)</li>
+<li><code>idiv(a: Int, b: Int) -&gt; Int</code>: returns the division of <code>a</code> by <code>b</code> (<code>a / b</code>)</li>
+<li><code>irem(a: Int, b: Int) -&gt; Int</code>: returns the remainder of <code>a</code> by <code>b</code> (<code>a % b</code>, commonly known as modulo.)</li>
+<li><code>ishl(a: Int, b: Int) -&gt; Int</code>: returns the result of the left shift of <code>a</code> by <code>b</code> (<code>a &lt;&lt; b</code>)</li>
+<li><code>ishr(a: Int, b: Int) -&gt; Int</code>: returns the result of the right shift of <code>a</code> by <code>b</code> (<code>a &gt;&gt; b</code>)</li>
+<li><code>ilt(a: Int, b: Int) -&gt; Bool</code>: returns <code>true</code> if <code>a</code> is strictly less than <code>b</code>, <code>false</code> otherwise</li>
+<li><code>ile(a: Int, b: Int) -&gt; Bool</code>: returns <code>true</code> if <code>a</code> is less than or equal to <code>b</code>, <code>false</code> otherwise</li>
+<li><code>igt(a: Int, b: Int) -&gt; Bool</code>: returns <code>true</code> if <code>a</code> is strictly greater than <code>b</code>, <code>false</code> otherwise</li>
+<li><code>ige(a: Int, b: Int) -&gt; Bool</code>: returns <code>true</code> if <code>a</code> is greater than or equal to <code>b</code>, <code>false</code> otherwise</li>
+<li><code>iinv(a: Int) -&gt; Int</code>: returns the bitwise inversion of <code>a</code> (<code>~a</code>)</li>
+<li><code>iand(a: Int, b: Int) -&gt; Int</code>: returns the result of the bitwise and of <code>a</code> and <code>b</code> (<code>a &amp; b</code>)</li>
+<li><code>ior(a: Int, b: Int) -&gt; Int</code>: returns the result of the bitwise or of <code>a</code> and <code>b</code> (<code>a | b</code>)</li>
+<li><code>ixor(a: Int, b: Int) -&gt; Int</code>: returns the result of the bitwise xor of <code>a</code> and <code>b</code> (<code>a ^ b</code>)</li>
+<li><code>fneg(a: Float) -&gt; Float</code>: returns the negation of <code>a</code> (<code>-a</code>)</li>
+<li><code>fadd(a: Float, b: Float) -&gt; Float</code>: returns the sum of <code>a</code> and <code>b</code> (<code>a + b</code>)</li>
+<li><code>fsub(a: Float, b: Float) -&gt; Float</code>: returns the difference of <code>a</code> and <code>b</code> (<code>a - b</code>)</li>
+<li><code>fmul(a: Float, b: Float) -&gt; Float</code>: returns the product of <code>a</code> and <code>b</code> (<code>a * b</code>)</li>
+<li><code>fdiv(a: Float, b: Float) -&gt; Float</code>: returns the division of <code>a</code> by <code>b</code> (<code>a / b</code>)</li>
+<li><code>flt(a: Float, b: Float) -&gt; Bool</code>: returns <code>true</code> if <code>a</code> is strictly less than <code>b</code>, <code>false</code> otherwise (<code>a &lt; b</code>)</li>
+<li><code>fle(a: Float, b: Float) -&gt; Bool</code>: returns <code>true</code> if <code>a</code> is less than or equal to <code>b</code>, <code>false</code> otherwise (<code>a &lt;= b</code>)</li>
+<li><code>fgt(a: Float, b: Float) -&gt; Bool</code>: returns <code>true</code> if <code>a</code> is strictly greater than <code>b</code>, <code>false</code> otherwise (<code>a &gt; b</code>)</li>
+<li><code>fge(a: Float, b: Float) -&gt; Bool</code>: returns <code>true</code> if <code>a</code> is greater than or equal to <code>b</code>, <code>false</code> otherwise (<code>a &gt;= b</code>)</li>
+</ul>
+<h4><a href="#tree-types-and-summary" id="tree-types-and-summary">Tree types and summary</a></h4>
+<p>Here is a summary of the tree types you will work with, defined in the <code>ast</code> package.</p>
+<ul>
+<li><code>ParenthesizedExpression(inner: Expression, …)</code>: <code>(&lt;expression&gt;)</code>, evaluates to <code>&lt;expression&gt;</code>.
+<ul>
+<li>The inner expression is <code>inner</code>.</li>
+<li>Example: <code>((1 + 2))</code> → <code>((3))</code> → <code>(3)</code> → <code>3</code></li>
+</ul>
+</li>
+<li><code>Record(identifier: String, fields: List[Labeled[Expression]], …)</code>:
+<ul>
+<li><code>&lt;identifier&gt;</code>, evaluates to a singleton record with the given name. (<code>fields = Nil</code>)</li>
+<li><code>&lt;identifier&gt;(&lt;field1&gt;: &lt;expression1&gt;, …)</code>, evaluates to a record with the given fields and values.</li>
+<li><code>&lt;identifier&gt;</code> starts with <code>#</code>.</li>
+<li>Example: <code>#pair(x: 1, y: 2)</code>, <code>#singleton</code>, <code>#none</code></li>
+</ul>
+</li>
+<li><code>Conditional(condition: Expression, successCase: Expression, failureCase: Expression, …)</code>:
+<ul>
+<li><code>if &lt;condition&gt; then &lt;successCase&gt; else &lt;failureCase&gt;</code>, evaluates to <code>&lt;successCase&gt;</code> if <code>&lt;condition&gt;</code> evaluates to <code>true</code>, <code>&lt;failureCase&gt;</code> otherwise.</li>
+<li>Example: <code>if true then 1 else 2</code> → <code>1</code>, <code>if false then 1 else 2</code> → <code>2</code></li>
+</ul>
+</li>
+<li><code>AscribedExpression(inner: Expression, operation: Typecast, ascription: Type, …)</code>:
+<ul>
+<li><code>inner</code> is the expression to be typecasted.</li>
+<li><code>@</code> means <code>operation = Typecast.Widen</code>
+<ul>
+<li>Returns the value of the expression. The check is left to the type-checker that is provided.</li>
+<li>Examples: <code>1 @ Int</code>, <code>1 @ Any</code></li>
+</ul>
+</li>
+<li><code>@!</code> means <code>operation = Typecast.NarrowUnconditionally</code>
+<ul>
+<li>Returns the value of the expression if the ascribed type is a subtype of the type of the expression. Otherwise, raises a <code>Panic</code>.</li>
+<li>Examples: <code>1 @! Float</code></li>
+</ul>
+</li>
+<li><code>@?</code> means <code>operation = Typecast.Narrow</code>
+<ul>
+<li>Returns <code>#some(value)</code> if the ascribed type is a subtype of the type of the expression, and <code>#none</code> otherwise.</li>
+<li>Examples: <code>1 @? Int</code>, <code>1 @? Float</code></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><code>Application(function: Expression, arguments: List[Labeled[Expression]], …)</code>: <code>&lt;function&gt;(&lt;arguments&gt;)</code>
+<ul>
+<li><code>function</code> is the function to be called.</li>
+<li><code>arguments</code> is the list of arguments.</li>
+<li>Example: <code>iadd(1, 2)</code></li>
+</ul>
+</li>
+<li><code>PrefixApplication(function: Expression, argument: Expression, …)</code>: <code>&lt;operator&gt; &lt;expression&gt;</code>
+<ul>
+<li><code>function</code> is the function to be called.</li>
+<li><code>argument</code> is the argument.</li>
+<li>Example: <code>-1</code></li>
+<li>The <code>function</code> is resolved when parsing from <code>&lt;operator&gt;</code>.</li>
+</ul>
+</li>
+<li><code>InfixApplication(function: Expression, lhs: Expression, rhs: Expression)</code>: <code>&lt;lhs&gt; &lt;operator&gt; &lt;rhs&gt;</code>
+<ul>
+<li><code>function</code> is the function to be called.</li>
+<li><code>lhs and</code>rhs are the arguments.</li>
+<li>Example: <code>1 + 2</code></li>
+<li>The <code>function</code> is resolved when parsing from <code>&lt;operator&gt;</code>.</li>
+</ul>
+</li>
+<li><code>Binding(identifier: String, ascription: Option[Type], initializer: Option[Expression], …)</code>:
+<ul>
+<li><code>identifier</code> is the name of the variable.</li>
+<li><code>ascription</code> is the type of the variable, if given.</li>
+<li><code>initializer</code> is the initial value of the variable, if given.</li>
+<li>Possible syntaxes:
+<ul>
+<li><code>let &lt;identifier&gt; = &lt;expression&gt;</code></li>
+<li><code>let &lt;identifier&gt;: &lt;ascription&gt;</code></li>
+<li><code>let &lt;identifier&gt;: &lt;ascription&gt; = &lt;expression&gt;</code></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><code>Let(binding: Binding, body: Expression, …)</code>: <code>&lt;binding&gt; { &lt;expression&gt; }</code>
+<ul>
+<li><code>binding</code> is the binding to be defined.</li>
+<li><code>body</code> is the body of the let.</li>
+<li>Example: <code>let x = 1 { x + 1 }</code></li>
+</ul>
+</li>
+<li><code>Match(scrutinee: Expression, cases: List[Match.Case], …)</code>: <code>match &lt;scrutinee&gt; { &lt;cases&gt; }</code>
+<ul>
+<li><code>scrutinee</code> is the value to be matched.</li>
+<li><code>cases</code> is the list of cases.</li>
+<li>Example: <code>match #person(age: 1) { case #person(age: 1) then 1 case _ then -1 }</code></li>
+</ul>
+</li>
+<li><code>Lambda(inputs: List[Parameter], output: Option[Type], body: Expression; …)</code>: <code>(&lt;parameters&gt;) -&gt; &lt;output&gt; { &lt;body&gt; }</code>
+<ul>
+<li><code>inputs</code> is the list of input parameters.</li>
+<li><code>output</code> is the output type, if given.</li>
+<li><code>body</code> is the body of the lambda.</li>
+<li>Example: <code>(_ x: Int, _ y: Int) -&gt; Int { x + y }</code></li>
+</ul>
+</li>
+</ul>
+
+</main>
+</div>
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/scala.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/swift.min.js"></script>
+<script>hljs.highlightAll();</script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous" onload="renderMathInElement(document.body, {delimiters:[{left:'$$', right:'$$', display: true}, {left:'$', right:'$', display: false}]});"></script>
+</body>
+</html>
