@@ -5,6 +5,8 @@ Welcome to the Compiler course 2024!
 
 In this first lab, you will implement an interpreter for the Alpine language, the language for which we will write the entire compiler during the semester.
 
+**This lab is due on Friday 1st of March at 7pm**.
+
 ## Preparing the environment
 
 We will use the following tools, make sure to install them before starting the lab:
