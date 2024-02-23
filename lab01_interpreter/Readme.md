@@ -455,7 +455,7 @@ depending on the type of the pattern.
 * `matchesWildcard` matches any value and returns an empty `Frame`
 * `matchesValue` matches the exact value and returns an empty `Frame`
 * `matchesBinding` matches a binding and returns a `Frame` with the bindings if any. Be careful, the type of the binding must match as well.
-* `matchesRecord` matches a record with the same name and the same fields, and returns a `Frame` with the bindings if any. Note that the fields of the record can be expressions and that the patterns for the fields should be recursively matched. Be careful, the record type must match as well (you can use `Pattern.record#dynamicType` and `structurallyMatches`.)
+* `matchesRecord` matches a record with the same name and the same fields, and returns a `Frame` with the bindings if any. Note that the fields of the record can be expressions and that the patterns for the fields should be recursively matched. Be careful, the record type must match as well (you can use `pattern.tpe` and `structurallyMatches`.)
 
 ### Step 8: Lambdas
 
