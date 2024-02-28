@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Parser</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github.min.css" media="screen" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github-dark.min.css" media="screen and (prefers-color-scheme: dark)" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.5.1/github-markdown.min.css">
+  <style>
+	.markdown-body {
+		box-sizing: border-box;
+		min-width: 200px;
+		max-width: 980px;
+		margin: 0 auto;
+		padding: 45px;
+	}
+
+	@media (max-width: 767px) {
+		.markdown-body {
+			padding: 15px;
+		}
+	}
+
+  .snippet pre {
+    margin-bottom: .1em;
+  }
+
+  .snippet-path {
+    font-size: 0.8em;
+    font-style: italic;
+    text-align: right;
+  }
+  </style>
+</head>
+<body class="markdown-body">
+<div id="container">
+<main>
+<p class="updated">Last updated on <time datetime=2024-02-28T16:57:10>Wednesday, February 28, 2024</time></p>
+<h1><a href="#lab-02---interpreter" id="lab-02---interpreter">Lab 02 - Interpreter</a></h1>
+<p>Welcome to the Compiler course 2024!</p>
+<p>In this first lab, you will implement an interpreter for the Alpine language, the language for which we will write the entire compiler during the semester.</p>
+<h2><a href="#obtaining-the-lab-files" id="obtaining-the-lab-files">Obtaining the lab files</a></h2>
+<p>To get the lab files, you have 2 options:</p>
+<ul>
+<li>
+<p>pull this repository if you already cloned it last week. Otherwise, you can clone it by running the following command:</p>
+<pre><code class="language-console">$ git pull
+</code></pre>
+<p>or</p>
+<pre><code class="language-console">$ git clone https://github.com/epfl-lara/compiler2024-labs-public.git
+</code></pre>
+</li>
+<li>
+<p>Download the zip file on Moodle</p>
+</li>
+</ul>
+<p>Then take your current <code>alpine</code> project, i.e., where you implemented the interpreter, and:</p>
+<ul>
+<li>copy the <code>parsing/</code> directory from this week (either from zip or repo) into your <code>alpine</code> project at this place: <code>src/main/scala/alpine/parsing</code></li>
+<li>copy the <code>util/</code> directory from this week (either from zip or repo) into your <code>alpine</code> project at this place: <code>src/main/scala/alpine/util</code></li>
+<li>copy the <code>Main.scala</code> file from this week (either from zip or repo) into your <code>alpine</code> project at this place: <code>src/main/scala/Main.scala</code></li>
+<li>copy the <code>driver/</code> directory from this week (either from zip or repo) into your <code>alpine</code> project at this place: <code>src/main/scala/alpine/driver</code></li>
+<li>copy the new test files by copying the <code>test/parsing</code> directory from this week (either from zip or repo) into your <code>alpine</code> project at this place: <code>src/test/scala/alpine/parsing</code></li>
+<li>copy the <code>test/util/</code> directory from this week (either from zip or repo) into your <code>alpine</code> project at this place: <code>src/test/scala/alpine/util</code></li>
+<li>remove the <code>lib/</code> directory from your <code>alpine</code> project</li>
+<li>move the interpreter tests from <code>src/test/scala/alpine/evaluation</code> to <code>archive/test/evaluation</code>. This is because these tests rely on the typechecking phase of the compiler, that we will implement later in the semester. So we keep them here to add them back later.</li>
+</ul>
+<p>Your project directory structure should look like something like this:</p>
+<pre><code class="language-console">alpine/
+├── archive/
+│   ├── test/
+│   │   ├── evaluation/                     &lt;----- MOVE THE INTERPRETER TESTS HERE  
+│   │   │   ├── InterpreterTest.scala
+├── lib/                                     &lt;----- DELETE THIS DIRECTORY
+├── src/
+│   ├── main/
+│   │   ├── scala/
+│   │   │   ├── alpine/
+│   │   │   │   ├── driver/                  &lt;----- COPY FROM THIS WEEK FILES
+│   │   │   │   ├── evaluation/
+│   │   │   │   │   ├── Interpreter.scala
+│   │   │   │   ├── parsing/                 &lt;----- COPY FROM THIS WEEK FILES
+│   │   │   │   │   ├── Parser.scala
+│   │   │   │   │   ├── ...
+│   │   │   │   ├── util/                    &lt;----- COPY FROM THIS WEEK FILES 
+│   │   │   │   │   ├── ...
+│   │   │   ├── Main.scala                   &lt;----- COPY FROM THIS WEEK FILES (replace the current one)
+├── test/
+│   ├── scala/
+│   │   ├── alpine/
+│   │   │   ├── evaluation/                  &lt;----- MOVED TO ARCHIVE
+│   │   │   ├── parsing/                     &lt;----- COPY FROM THIS WEEK FILES
+│   │   │   │   ├── ...
+│   │   │   ├── util/                        &lt;----- COPY FROM THIS WEEK FILES
+</code></pre>
+<h2><a href="#submit-your-work" id="submit-your-work">Submit your work</a></h2>
+<p>To submit your work, go to this week assignment on Moodle and upload the following file:</p>
+<ul>
+<li><code>src/main/scala/alpine/parser/Parser.scala</code></li>
+</ul>
+<h2><a href="#general-idea-of-the-project" id="general-idea-of-the-project">General idea of the project</a></h2>
+<p>Let&rsquo;s recall the global idea of a simple compiler&rsquo;s pipeline:</p>
+<pre><code>Source code -&gt; Lexer -&gt; Parser -&gt; Type checking -&gt; Assembly generation
+</code></pre>
+<p>The lexer will generate a sequence of tokens from the source code. The parser will generate an AST from the sequence of tokens.</p>
+<p>Let consider an example:</p>
+<pre><code class="language-swift">let main = exit(1)
+</code></pre>
+<p>The lexer will generate the following sequence of tokens:</p>
+<pre><code class="language-scala">List(
+  Let(0: 3), // let
+  Identifier(4: 8), // main
+  Eq(9: 10), // = 
+  Identifier(11: 15), // exit
+  LParen(15: 16), // (
+  Integer(16: 17), // 1
+  RParen(17: 18) // )
+)
+</code></pre>
+<p><code>Let</code>, <code>Identifier</code>, <code>Eq</code>, <code>LParen</code>, <code>Integer</code>, <code>RParen</code> are tokens. The first element of each tuple is the position of the token in the source code.</p>
+<p>The parser will generate the following AST:</p>
+<pre><code class="language-scala">List(
+  Binding(
+    main, // identifier
+    None, // type
+    Some( // initializer
+      Application( // function call
+        Identifier(exit, hello.al: 1: 12 - 1: 16),
+        List( // arguments
+          Labeled(
+            None,
+            IntegerLiteral(1, hello.al: 1: 17 - 1: 18),
+            hello.al: 1: 17 - 1: 18
+          )
+        ),
+        hello.al: 1: 12 - 1: 19
+      )
+    ),
+    hello.al: 1: 1 - 1: 19
+  )
+)
+</code></pre>
+<p>The AST is more expressive than the sequence of tokens as it represents the structure of the source code.</p>
+<h2><a href="#general-structure-of-the-parser-and-the-codebase" id="general-structure-of-the-parser-and-the-codebase">General structure of the parser and the codebase</a></h2>
+<p>The parser consummes a sequence of tokens as a stream to produce an AST.</p>
+<p>The parsing is composed of multiple functions. Each function is responsible for parsing a specific part of the grammar. For example, the <code>binding</code> function is responsible for parsing a binding.</p>
+<p>Here is the available API to implement the parser:</p>
+<ul>
+<li><code>peek</code>: looks at the next token without consuming it.
+<ul>
+<li>it returns either <code>Some(token)</code> or <code>None</code> if the stream is empty (i.e. we reach an EOF).</li>
+</ul>
+</li>
+<li><code>take()</code>: consumes the next token
+<ul>
+<li>it returns either <code>Some(token)</code> or <code>None</code> if the stream is empty (i.e. we reach an EOF), and consumes a token from the stream.</li>
+</ul>
+</li>
+<li><code>takeIf(pred: Token =&gt; Boolean)</code>: takes a predicate, and consumes and returns the next token <strong>if it satisfies the predicate</strong></li>
+<li><code>take(k: Token.Kind)</code>: shorthand for <code>takeIf(_.kind == k)</code></li>
+<li><code>expect(k: Token.Kind)</code>: shorthand for <code>take(k)).getOrElse(throw FatalError(…))</code>
+<ul>
+<li>i.e. it takes the next token and throws an error if it is not the expected kind of token.</li>
+</ul>
+</li>
+<li><code>expect(construct: String, pred: Token =&gt; Boolean)</code>: same as <code>expect</code> but takes a construct to include in the error message.</li>
+<li><code>report</code>: reports an error while parsing.</li>
+<li><code>backup</code>: saves the current state of the parser</li>
+<li><code>restore</code> : restores the state of the parser to a backup returned by <code>backup</code></li>
+</ul>
+<h3><a href="#new-elements-of-the-language" id="new-elements-of-the-language">New elements of the language</a></h3>
+<p>Throughout the lab, we will see new elements of the language.</p>
+<h4><a href="#types" id="types">Types</a></h4>
+<p>In <em>Alpine</em>, you can create type declarations:</p>
+<pre><code class="language-swift">type Vector2 =
+  #vector2(x: Float, y: Float)
+type Circle =
+  #circle(origin: Vector2, radius: Float)
+type Rectangle =
+  #rectangle(origin: Vector2, dimension: Vector2)
+</code></pre>
+<p>There is also closed union types (also known as a sum type):</p>
+<pre><code class="language-swift">type OptionInt = #none | #some(Int)
+</code></pre>
+<p>In this case, a value of type <code>OptionInt</code> can be either a <code>#none</code> or a <code>#some(Int)</code>.</p>
+<p>You can also define recursive types:</p>
+<pre><code class="language-swift">type List = #empty | #list(head: Any, tail: List)
+</code></pre>
+<p>For reference, the grammar is provided inside the <a href="./grammar.md"><code>grammar.md</code></a>/<a href="./grammar.html"><code>grammar.html</code></a> file.</p>
+<h2><a href="#implementation" id="implementation">Implementation</a></h2>
+<h3><a href="#some-hints" id="some-hints">Some hints</a></h3>
+<p>The parser is written in composing functions, that each parses a part of the grammar.</p>
+<p>For example, let&rsquo;s have a look at the <code>primarayExpression()</code> function. This function <code>peek</code> at the next token, and depending on its nature, calls the appropriate function to parse the corresponding producing rule of the grammar.</p>
+<div class='snippet'>
+<pre><code class="language-scala">private[parsing] def primaryExpression(): Expression =
+  peek match
+    case Some(Token(K.Identifier, s)) =&gt;
+      identifier()
+    case Some(Token(K.True, _)) =&gt;
+      booleanLiteral()
+    case Some(Token(K.False, _)) =&gt;
+      booleanLiteral()
+    case Some(Token(K.Integer, _)) =&gt;
+      integerLiteral()
+    case Some(Token(K.Float, _)) =&gt;
+      floatLiteral()
+    case Some(Token(K.String, _)) =&gt;
+      stringLiteral()
+    case Some(Token(K.Label, _)) =&gt;
+      recordExpression()
+    case Some(Token(K.If, _)) =&gt;
+      conditional()
+    case Some(Token(K.Match, _)) =&gt;
+      mtch()
+    case Some(Token(K.Let, _)) =&gt;
+      let()
+    case Some(Token(K.LParen, _)) =&gt;
+      lambdaOrParenthesizedExpression()
+    case Some(t) if t.kind.isOperatorPart =&gt;
+      operator()
+    case _ =&gt;
+      recover(ExpectedTree(&quot;expression&quot;, emptySiteAtLastBoundary), ErrorTree.apply)
+</code></pre>
+<p class='snippet-path'>src/main/scala/alpine/parsing/Parser.scala</p>
+</div>
+<p>In general, each function parses a producing rule of the grammar (see <a href="./grammar.md"><code>grammar.md</code></a>).</p>
+<p>An important thing to understand and be careful with is when a token is peeked and when it is taken. This is an important aspect of the parser, so think about it before starting to implement.</p>
+<p>Some of the functions in the parser are high order parsers: this means that they take another parser as argument. For example, <code>commaSeparatedList</code> takes a parser as argument and returns a parser that parses a list of elements separated by commas.</p>
+<p>One last interesting aspect about our pipeline is that some operators are not tokenized by the tokenizer. For example, <code>&gt;=</code> is tokenized as two tokens <code>&gt;</code> and <code>=</code>. This is because the <code>&gt;</code> can be used in other contexts (s.t. <code>List&lt;Int&gt;</code>). Therefore, the parser is responsible from handling this case and create the operator or not depending on the context. This is an important technique in the world of compilers.</p>
+<h3><a href="#your-task-implement-the-parser" id="your-task-implement-the-parser">Your Task: Implement the Parser</a></h3>
+<p>We suggest to start implementing by <code>conditional()</code>.</p>
+<h4><a href="#some-hints-about-how-to-parse-the-grammar" id="some-hints-about-how-to-parse-the-grammar">Some hints about how to parse the grammar</a></h4>
+<p>This section contains a non-exhaustive list of hints to help you parse and understand the grammar.</p>
+<h5><a href="#compound-expressions-compoundexpression" id="compound-expressions-compoundexpression">Compound expressions <code>compoundExpression()</code></a></h5>
+<p>Look at the grammar and we can see that a compound expression is primary expression followed by a &lsquo;.&rsquo;, a &lsquo;(&rsquo;, or nothing. Here are some examples and the corresponding type of the node produced by the parser when the primary expression is followed by &lsquo;.&rsquo;:</p>
+<ul>
+<li><code>#record(a: 1).1</code>: <code>Selection</code></li>
+<li><code>#record(a: 1).a</code>: <code>Selection</code></li>
+<li><code>#record(a: 1).+</code>: <code>Selection</code></li>
+</ul>
+<h5><a href="#prefix-expressions-prefixexpression" id="prefix-expressions-prefixexpression">Prefix expressions <code>prefixExpression()</code></a></h5>
+<p>TODO Marwan unclear</p>
+<pre><code class="language-grammar">prefixExpression := compoundExpression | Identifier(operator)
+</code></pre>
+<p>A prefix expression checks if the next token is an operator. <strong>If there is no space between the operator and the next token</strong> (see <code>noWhitespaceBeforeNextToken</code>), parse the prefix operator and the compound expression that follows. It returns a <code>PrefixApplication</code> AST node. The fact we have to check for white space presence shows us that this gammar is not a context-free grammar.</p>
+<p>If there is no whitespace, then it returns directly the operator (recall: it&rsquo;s an <code>Identifier</code>.)</p>
+<p>In the case where it is not an operator, it will parse the compound expression.</p>
+<h5><a href="#ascribedexpression" id="ascribedexpression"><code>ascribedExpression()</code></a></h5>
+<p>An ascribed expression is a prefix expression followed by an optional type cast. It returns a <code>AscribedExpression</code> AST node if there is a type cast, otherwise just a prefix expression. You can use the <code>typecast</code> function.</p>
+<h5><a href="#infixexpression-and-expression" id="infixexpression-and-expression"><code>infixExpression</code> and <code>expression()</code></a></h5>
+<p>As we saw in the lecture, parsing expressions requires care because of the ambiguity introduced by precedence.</p>
+<p>Notice that infixEpression takes a precendence as input: you may use it this parameter to factor out the parsing of all possible infix expressions with different precedence levels.</p>
+<p>You may take inspiration from the precedence climbing algorithm to parse infix expressions. See <a href="&quot;https://en.wikipedia.org/wiki/Operator-precedence_parser#Precedence_climbing_method&quot;">the Wikipedia article</a> for more information.</p>
+<h5><a href="#literals" id="literals">Literals</a></h5>
+<p>To get the text a token contain, you can use the <code>.site.text</code> method.</p>
+<h5><a href="#labeled" id="labeled"><code>labeled(…)</code></a></h5>
+<p>A <code>Labeled[T]</code> is a value of type <code>T</code> (as in Scala) with an optional <code>String</code> denoting its label.</p>
+<p>In <em>Alpine</em>, a <code>Labeled[T]</code> can be:</p>
+<ul>
+<li><code>&lt;value&gt;</code></li>
+<li><code>&lt;label&gt;: &lt;value&gt;</code></li>
+</ul>
+<p><em>Hint</em>: you may find the <code>backup</code> and <code>restore</code> methods useful.</p>
+<p><em>Note</em>: as stated in the grammar, a <code>&lt;label&gt;</code> can be an <code>&lt;identifier&gt;</code> or a <code>&lt;keyword&gt;</code>.</p>
+<h5><a href="#inparentheses-inbraces-inangles" id="inparentheses-inbraces-inangles"><code>inParentheses</code>, <code>inBraces</code>, <code>inAngles</code></a></h5>
+<p>Complete the three different functions that parses an <code>element</code> delimited by parentheses (<code>(&lt;element&gt;)</code>), braces (<code>{&lt;element&gt;}</code>) and angles (<code>&lt;&gt;</code>)</p>
+<h5><a href="#parenthesizedlabeledlistvalue---t-listlabeledt" id="parenthesizedlabeledlistvalue---t-listlabeledt"><code>parenthesizedLabeledList(value: () =&gt; T): List[Labeled[T]]</code></a></h5>
+<p>This function parses a list of labeled values delimited by parentheses. The list can be empty.</p>
+<p>For example, the above function is responsible to parse the following code:</p>
+<pre><code class="language-swift">(1, 2, label: 3)
+</code></pre>
+<p>The functions <code>inParentheses</code>, <code>labeled</code> are useful to implement this function.</p>
+<h5><a href="#records" id="records">Records</a></h5>
+<p>In this part, you should implement <code>recordExpression()</code>, <code>recordExpressionFields()</code> and <code>record(fields: () =&gt; List[Field], make: (String, List[Field], …) =&gt; T)</code></p>
+<ul>
+<li>
+<p>The <code>record</code> function is responsible for parsing a record. It returns a <code>T</code> AST node. In the case of parsing record expressions, <code>T</code> is <code>ast.Record</code>. It is general and will be used as well for <code>recordType</code>s</p>
+</li>
+<li>
+<p><code>recordExpression()</code> is a function used to parse a record expression. It returns a <code>Record</code> AST node.</p>
+</li>
+<li>
+<p>The <code>recordExpressionFields()</code> function is responsible for parsing the fields of a record expression. It returns a <code>List[Labeled[Expression]]</code> AST node.</p>
+</li>
+</ul>
+<div class="hint">
+<p>Do forget that you can reuse parser functions you already implemented so far.</p>
+</div>
+<p>It should parse the following sub grammar:</p>
+<pre><code>RecordExpression := '#' Identifier ['(' LabeledExpressionList ')']
+</code></pre>
+<div class="note">
+<p>An identifier with a <code>#</code> prefix is a special token called <code>Label</code>.</p>
+<p>Note as well that <code>Field</code> is a generic type! It should be of subtype <code>Labeled[Tree]</code> and <code>Labeled</code> is covariant. It will come handy when we will parse record types.</p>
+</div>
+<h5><a href="#conditionals-conditional" id="conditionals-conditional">Conditionals <code>conditional()</code></a></h5>
+<p><code>if &lt;expression&gt; then &lt;expression&gt; else &lt;expression&gt;</code></p>
+<p>which correspond to:</p>
+<p><code>IfExpression := 'if' Expression 'then' Expression 'else' Expression</code> in the grammar.</p>
+<p>The <code>if</code> function has necessarily to have an <code>else</code> branch. The <code>else</code> branch is mandatory in <em>Alpine</em>.</p>
+<h5><a href="#tpe" id="tpe"><code>tpe()</code></a></h5>
+<p>The <code>tpe</code> function is responsible for parsing a type. It returns a <code>Type</code> AST node. For the fact, <code>tpe</code> is called <code>tpe</code> because <code>type</code> is a reserved keyword in Scala.</p>
+<p><code>tpe</code> should parse the <code>Type</code> given the grammar above. You can call the <code>primaryType</code> function to parse a <code>PrimaryType</code>.</p>
+<h5><a href="#recordtype-and-recordtypefields" id="recordtype-and-recordtypefields"><code>recordType()</code> and <code>recordTypeFields()</code></a></h5>
+<p>Now, implement the <code>recordType</code> and <code>recordTypeFields</code> functions. They are responsible for parsing a record type and its fields. They should return a <code>RecordType</code> and a <code>List[Labeled[Type]]</code> respectively.</p>
+<p>In the same manner as <code>recordExpression</code> and <code>recordExpressionFields</code>, <code>recordType</code> should call the <code>record</code> function.</p>
+<h5><a href="#arroworparenthesizedtype" id="arroworparenthesizedtype"><code>arrowOrParenthesizedType()</code></a></h5>
+<p>When encountering a <code>(</code> token, it can be either a function&rsquo;s type or a parenthesized type. This function should parse the two cases and return the corresponding AST node.</p>
+<p>It should parse both cases:</p>
+<ul>
+<li>Parenthesized type (<code>ParenthesizedType</code>):</li>
+</ul>
+<pre><code>(&lt;type&gt;)
+</code></pre>
+<p>and</p>
+<ul>
+<li>Arrow/Lambda type:</li>
+</ul>
+<pre><code>(&lt;type1&gt;, &lt;type2&gt;, …, &lt;typeN&gt;) -&gt; &lt;type&gt;
+</code></pre>
+<h5><a href="#bindings--let" id="bindings--let">Bindings &amp; let</a></h5>
+<h6><a href="#binding" id="binding"><code>binding()</code></a></h6>
+<p>A binding is a top-level declaration that binds an identifier to a value. It has the following form:</p>
+<pre><code>let &lt;identifier&gt; [':' &lt;type&gt;] [= expression]
+</code></pre>
+<p>where <code>[: &lt;type&gt;]</code> and <code>[= expression]</code> is not always optional: the argument <code>initializerIsExpected</code> is <code>true</code> if the initializer is expected (i.e. not optional) and <code>false</code> otherwise (i.e. optional): it may come handy for later! Implement the <code>binding()</code> function that parses a binding.</p>
+<h5><a href="#functions-function-valueparameterlist-parameter" id="functions-function-valueparameterlist-parameter">Functions: <code>function()</code>, <code>valueParameterList()</code>, <code>parameter()</code></a></h5>
+<h5><a href="#parameter" id="parameter"><code>parameter()</code></a></h5>
+<p>A parameter is of the form:</p>
+<pre><code>&lt;identifier&gt; &lt;identifier&gt; [: &lt;type&gt;] // labeled
+'_' &lt;identifier&gt; [: &lt;type&gt;] // unlabeled
+&lt;keyword&gt; &lt;identifier&gt; [: &lt;type&gt;] // labeled by keyword
+</code></pre>
+<p>When labeled by a keyword, the keyword is the label.</p>
+<p>When labeled, the parameter&rsquo;s name (i.e. its identifier inside the function) is the second identifier.</p>
+<p>When unlabeled, the parameter&rsquo;s name is the first and only identifier.</p>
+<p>Implement the <code>parameter</code> function that parses a parameter. It returns a <code>Parameter</code> AST node.</p>
+<p><em>Note</em>: here the label is before the identifier without any separator token. It is not the case for <code>labeled</code> where the label is separated by a colon with the identifier.</p>
+<h6><a href="#valueparameterlist" id="valueparameterlist"><code>valueParameterList()</code></a></h6>
+<p>A value parameter list is a list of parameters. It has the following form:</p>
+<pre><code>( &lt;parameter1&gt;, … )
+</code></pre>
+<p>Implement the <code>valueParameterList</code> function that parses a value parameter list. It returns a <code>List[Parameter]</code> AST node.</p>
+<h5><a href="#function" id="function"><code>function()</code></a></h5>
+<p>A function is of the form:</p>
+<pre><code>fun &lt;identifier&gt; (&lt;type parameters&gt;) [-&gt; &lt;type&gt;] { &lt;expression&gt; }
+</code></pre>
+<p>where <code>[-&gt; &lt;type&gt;]</code> is optional. Implement the <code>function</code> function that parses a function. It returns a <code>Function</code> AST node.</p>
+<h3><a href="#lambdaorparenthesizedexpression" id="lambdaorparenthesizedexpression"><code>lambdaOrParenthesizedExpression()</code></a></h3>
+<p>When encountering a <code>(</code> token, it can be either a lambda or a parenthesized expression. This function should parse the two cases and return the corresponding AST node.</p>
+<p>It should parse both cases:</p>
+<pre><code>(&lt;expression&gt;)
+</code></pre>
+<p>and</p>
+<pre><code>(&lt;value parameter list&gt;) -&gt; { &lt;expression&gt; }
+</code></pre>
+<h5><a href="#match-expressions" id="match-expressions">Match expressions</a></h5>
+<p>A match expression is a conditional expression that matches a value against a set of patterns. It has the following form:</p>
+<pre><code class="language-swift">match &lt;expression&gt; {
+  case &lt;pattern&gt; then &lt;expression&gt;
+}
+</code></pre>
+<p>Let&rsquo;s decompose this pattern into smaller parts as we did for the other elements of the language.</p>
+<h6><a href="#mtch" id="mtch"><code>mtch()</code></a></h6>
+<p>The <code>mtch</code> function is responsible for parsing a match expression. It returns a <code>Match</code> AST node. It expects a <code>match</code> token, an expression and then calls <code>matchBody</code> to parse the body of the match expression.</p>
+<h6><a href="#pattern-with-wildcard-recordpattern-bindingpattern-and-valuepattern" id="pattern-with-wildcard-recordpattern-bindingpattern-and-valuepattern"><code>pattern()</code> with <code>wildcard()</code>, <code>recordPattern()</code>, <code>bindingPattern()</code> and <code>valuePattern()</code></a></h6>
+<p>The four functions are responsible for parsing a pattern. They return a <code>Pattern</code> AST node.</p>
+<ul>
+<li><code>wildcard</code> should parse the <code>_</code> token.</li>
+<li><code>valuePattern</code> should parse an <code>expression</code> and return a <code>ValuePattern</code> AST node.</li>
+<li><code>bindingPattern</code> should parse a <code>binding()</code> without an initializer!</li>
+<li><code>recordPattern</code> should call the <code>record</code> function and return a <code>RecordPattern</code> AST node. Don&rsquo;t forget that you&rsquo;ve made a function to parse records! However, it is required to fill the <code>recordPatternFields()</code> function.</li>
+</ul>
+
+</main>
+</div>
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/scala.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/swift.min.js"></script>
+<script>hljs.highlightAll();</script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous" onload="renderMathInElement(document.body, {delimiters:[{left:'$$', right:'$$', display: true}, {left:'$', right:'$', display: false}]});"></script>
+</body>
+</html>
