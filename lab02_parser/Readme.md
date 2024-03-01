@@ -252,8 +252,6 @@ Look at the grammar and we can see that a compound expression is primary express
 
 ##### Prefix expressions `prefixExpression()`
 
-TODO Marwan unclear
-
 ```grammar
 prefixExpression := compoundExpression | Identifier(operator)
 ```
