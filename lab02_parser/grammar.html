@@ -37,7 +37,7 @@
 <body class="markdown-body">
 <div id="container">
 <main>
-<p class="updated">Last updated on <time datetime=2024-02-27T16:46:54>Tuesday, February 27, 2024</time></p>
+<p class="updated">Last updated on <time datetime=2024-03-01T16:30:04>Friday, March 01, 2024</time></p>
 <h1><a href="#alpine-grammar" id="alpine-grammar">Alpine grammar</a></h1>
 <h2><a href="#notation" id="notation">Notation</a></h2>
 <ul>
@@ -49,6 +49,8 @@
 Declaration -&gt; Binding | Function | TypeDeclaration
 
 Binding -&gt; 'let' Identifier [':' Type] '=' Expression
+LetExpression -&gt; Binding '{' Expression '}'
+
 Function -&gt; 'fun' FunctionIdentifier '(' [ValueParameterList] ')' ['-&gt;' Type] '{' Expression '}'
 TypeDeclaration -&gt; 'type' Identifier '=' Type
 
@@ -66,7 +68,7 @@ Ascribed -&gt; PrefixExpression [('@' | '@!' | '@?')  Type]
 // The choice between 1st and 2nd here depends on whether there is a whitespace after the operator (2) or not (1) 
 PrefixExpression -&gt; InfixOp | InfixOp CompoundExpression | CompoundExpression
 
-CompoundExpression -&gt; PrimaryExpression ['.' Integer | '.' Identifier | '.' InfixOp | '(' LabeledExpressionList ')']
+CompoundExpression -&gt; PrimaryExpression ['.' Integer  | '.' Identifier  | '.' InfixOp  | '(' LabeledExpressionList ')']*
 
 PrimaryExpression -&gt; Identifier | Literal | Record | IfExpression | MatchExpression | LetExpression | '(' Expression ')' | LambdaDef
 
@@ -89,8 +91,6 @@ RecordPattern -&gt; '#' Identifier [ '(' list(RecordPatternField) ')' ]
 RecordPatternField -&gt; Pattern
 BindingPattern -&gt; 'let' Identifier [':' Type]
 ValuePattern -&gt; Expression
-
-LetExpression -&gt; 'let' Binding 'in' Expression
 
 
 Type -&gt; SumType

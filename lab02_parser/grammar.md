@@ -13,6 +13,8 @@ Program -> list(Declaration)
 Declaration -> Binding | Function | TypeDeclaration
 
 Binding -> 'let' Identifier [':' Type] '=' Expression
+LetExpression -> Binding '{' Expression '}'
+
 Function -> 'fun' FunctionIdentifier '(' [ValueParameterList] ')' ['->' Type] '{' Expression '}'
 TypeDeclaration -> 'type' Identifier '=' Type
 
@@ -30,7 +32,7 @@ Ascribed -> PrefixExpression [('@' | '@!' | '@?')  Type]
 // The choice between 1st and 2nd here depends on whether there is a whitespace after the operator (2) or not (1) 
 PrefixExpression -> InfixOp | InfixOp CompoundExpression | CompoundExpression
 
-CompoundExpression -> PrimaryExpression ['.' Integer | '.' Identifier | '.' InfixOp | '(' LabeledExpressionList ')']
+CompoundExpression -> PrimaryExpression ['.' Integer  | '.' Identifier  | '.' InfixOp  | '(' LabeledExpressionList ')']*
 
 PrimaryExpression -> Identifier | Literal | Record | IfExpression | MatchExpression | LetExpression | '(' Expression ')' | LambdaDef
 
@@ -53,8 +55,6 @@ RecordPattern -> '#' Identifier [ '(' list(RecordPatternField) ')' ]
 RecordPatternField -> Pattern
 BindingPattern -> 'let' Identifier [':' Type]
 ValuePattern -> Expression
-
-LetExpression -> 'let' Binding 'in' Expression
 
 
 Type -> SumType
