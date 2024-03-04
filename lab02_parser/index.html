@@ -37,7 +37,7 @@
 <body class="markdown-body">
 <div id="container">
 <main>
-<p class="updated">Last updated on <time datetime=2024-03-03T23:46:55>Sunday, March 03, 2024</time></p>
+<p class="updated">Last updated on <time datetime=2024-03-04T22:24:18>Monday, March 04, 2024</time></p>
 <h1><a href="#lab-02---interpreter" id="lab-02---interpreter">Lab 02 - Interpreter</a></h1>
 <p>Welcome to the Compiler course 2024!</p>
 <p>In this first lab, you will implement an interpreter for the Alpine language, the language for which we will write the entire compiler during the semester.</p>
@@ -245,7 +245,7 @@ type Rectangle =
 <pre><code class="language-grammar">PrefixExpression -&gt; InfixOp | InfixOp CompoundExpression | CompoundExpression
 </code></pre>
 <p>A prefix expression checks if the next token is an operator. <strong>If there is no space between the operator and the next token</strong> (see <code>noWhitespaceBeforeNextToken</code>), parse the prefix operator and the compound expression that follows. It returns a <code>PrefixApplication</code> AST node. The fact we have to check for white space presence shows us that this gammar is not a context-free grammar.</p>
-<p>If there is no whitespace, then it returns directly the operator (recall: it&rsquo;s an <code>Identifier</code>.)</p>
+<p>If there is a whitespace, then it returns directly the operator (recall: it&rsquo;s an <code>Identifier</code>.)</p>
 <p>In the case where it is not an operator, it will parse the compound expression (so call the <code>compoundExpression()</code> function.)</p>
 <h5><a href="#ascribedexpression" id="ascribedexpression"><code>ascribedExpression()</code></a></h5>
 <p>An ascribed expression is a prefix expression followed by an optional type cast. It returns a <code>AscribedExpression</code> AST node if there is a type cast, otherwise just a prefix expression. You can use the <code>typecast</code> function.</p>

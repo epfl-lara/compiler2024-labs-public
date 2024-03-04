@@ -262,7 +262,7 @@ PrefixExpression -> InfixOp | InfixOp CompoundExpression | CompoundExpression
 
 A prefix expression checks if the next token is an operator. **If there is no space between the operator and the next token** (see `noWhitespaceBeforeNextToken`), parse the prefix operator and the compound expression that follows. It returns a `PrefixApplication` AST node. The fact we have to check for white space presence shows us that this gammar is not a context-free grammar.
 
-If there is no whitespace, then it returns directly the operator (recall: it's an `Identifier`.)
+If there is a whitespace, then it returns directly the operator (recall: it's an `Identifier`.)
 
 In the case where it is not an operator, it will parse the compound expression (so call the `compoundExpression()` function.)
 
