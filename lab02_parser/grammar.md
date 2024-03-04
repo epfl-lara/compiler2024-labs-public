@@ -5,6 +5,7 @@
 
 * `list(X)` denotes a list of `X` elements, possibly empty, separated by `,`. For example. `IntegerList -> list(Integer)` represents lists like `1 , 2 , 3`, ` `, or `1`.
 * `[ X ]` denotes an optional `X`. For example, `['+']` represents `+` or nothing.
+* `X1 | X2 | …` denotes a choice between the elements `X1`, `X2`, …. For example, `('+' | '-')` represents `+` or `-`.
 
 ## Grammar
 
@@ -32,9 +33,12 @@ Ascribed -> PrefixExpression [('@' | '@!' | '@?')  Type]
 // The choice between 1st and 2nd here depends on whether there is a whitespace after the operator (2) or not (1) 
 PrefixExpression -> InfixOp | InfixOp CompoundExpression | CompoundExpression
 
-CompoundExpression -> PrimaryExpression ['.' Integer  | '.' Identifier  | '.' InfixOp  | '(' LabeledExpressionList ')']*
+CompoundExpression -> PrimaryExpression CompoundExpression2
+CompoundExpression2 -> ε |  ['.' Integer  | '.' Identifier  | '.' InfixOp  | '(' LabeledExpressionList ')'] CompoundExpression2
 
 PrimaryExpression -> Identifier | Literal | Record | IfExpression | MatchExpression | LetExpression | '(' Expression ')' | LambdaDef
+
+LambdaDef -> '(' ValueParameterList ')' ['->' Type] '{' Expression '}'
 
 Literal -> IntegerLiteral | FloatLiteral | StringLiteral | BooleanLiteral
 

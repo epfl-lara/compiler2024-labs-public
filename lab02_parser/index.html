@@ -37,7 +37,7 @@
 <body class="markdown-body">
 <div id="container">
 <main>
-<p class="updated">Last updated on <time datetime=2024-02-28T16:57:10>Wednesday, February 28, 2024</time></p>
+<p class="updated">Last updated on <time datetime=2024-03-03T23:46:55>Sunday, March 03, 2024</time></p>
 <h1><a href="#lab-02---interpreter" id="lab-02---interpreter">Lab 02 - Interpreter</a></h1>
 <p>Welcome to the Compiler course 2024!</p>
 <p>In this first lab, you will implement an interpreter for the Alpine language, the language for which we will write the entire compiler during the semester.</p>
@@ -167,8 +167,8 @@
 </li>
 <li><code>expect(construct: String, pred: Token =&gt; Boolean)</code>: same as <code>expect</code> but takes a construct to include in the error message.</li>
 <li><code>report</code>: reports an error while parsing.</li>
-<li><code>backup</code>: saves the current state of the parser</li>
-<li><code>restore</code> : restores the state of the parser to a backup returned by <code>backup</code></li>
+<li><code>snapshot</code>: returns the current state of the parser</li>
+<li><code>restore</code> : restores the state of the parser from a backup returned by <code>backup</code></li>
 </ul>
 <h3><a href="#new-elements-of-the-language" id="new-elements-of-the-language">New elements of the language</a></h3>
 <p>Throughout the lab, we will see new elements of the language.</p>
@@ -236,19 +236,25 @@ type Rectangle =
 <h5><a href="#compound-expressions-compoundexpression" id="compound-expressions-compoundexpression">Compound expressions <code>compoundExpression()</code></a></h5>
 <p>Look at the grammar and we can see that a compound expression is primary expression followed by a &lsquo;.&rsquo;, a &lsquo;(&rsquo;, or nothing. Here are some examples and the corresponding type of the node produced by the parser when the primary expression is followed by &lsquo;.&rsquo;:</p>
 <ul>
-<li><code>#record(a: 1).1</code>: <code>Selection</code></li>
-<li><code>#record(a: 1).a</code>: <code>Selection</code></li>
-<li><code>#record(a: 1).+</code>: <code>Selection</code></li>
+<li><code>#record(a: 1).1</code>: <code>Selection(Record(…), IntegerLiteral(1, …))</code></li>
+<li><code>#record(a: 1).a</code>: <code>Selection(Record(…), Identifier(&quot;a&quot;, …))</code></li>
+<li><code>#record(a: 1).+</code>: <code>Selection(Record(…), Identifier(&quot;+&quot;, …))</code></li>
+<li><code>a.b</code>: <code>Selection(Identifier(&quot;a&quot;, …), Identifier(&quot;b&quot;, …)</code></li>
 </ul>
 <h5><a href="#prefix-expressions-prefixexpression" id="prefix-expressions-prefixexpression">Prefix expressions <code>prefixExpression()</code></a></h5>
-<p>TODO Marwan unclear</p>
-<pre><code class="language-grammar">prefixExpression := compoundExpression | Identifier(operator)
+<pre><code class="language-grammar">PrefixExpression -&gt; InfixOp | InfixOp CompoundExpression | CompoundExpression
 </code></pre>
 <p>A prefix expression checks if the next token is an operator. <strong>If there is no space between the operator and the next token</strong> (see <code>noWhitespaceBeforeNextToken</code>), parse the prefix operator and the compound expression that follows. It returns a <code>PrefixApplication</code> AST node. The fact we have to check for white space presence shows us that this gammar is not a context-free grammar.</p>
 <p>If there is no whitespace, then it returns directly the operator (recall: it&rsquo;s an <code>Identifier</code>.)</p>
-<p>In the case where it is not an operator, it will parse the compound expression.</p>
+<p>In the case where it is not an operator, it will parse the compound expression (so call the <code>compoundExpression()</code> function.)</p>
 <h5><a href="#ascribedexpression" id="ascribedexpression"><code>ascribedExpression()</code></a></h5>
 <p>An ascribed expression is a prefix expression followed by an optional type cast. It returns a <code>AscribedExpression</code> AST node if there is a type cast, otherwise just a prefix expression. You can use the <code>typecast</code> function.</p>
+<p>Example:</p>
+<ul>
+<li><code>a @ Int</code>: <code>AscribedExpression(Identifier(&quot;a&quot;, …), Typecast.Widen, TypeIdentifier(&quot;Int&quot;, _), _)</code></li>
+<li><code>1 @ Int</code>: <code>AscribedExpression(IntegerLiteral(1, …), Typecast.Widen, TypeIdentifier(&quot;Int&quot;, _), _)</code></li>
+<li><code>1</code>: <code>IntegerLiteral(1, …)</code> (returned by the <code>prefixExpression</code> function)</li>
+</ul>
 <h5><a href="#infixexpression-and-expression" id="infixexpression-and-expression"><code>infixExpression</code> and <code>expression()</code></a></h5>
 <p>As we saw in the lecture, parsing expressions requires care because of the ambiguity introduced by precedence.</p>
 <p>Notice that infixEpression takes a precendence as input: you may use it this parameter to factor out the parsing of all possible infix expressions with different precedence levels.</p>
@@ -264,6 +270,12 @@ type Rectangle =
 </ul>
 <p><em>Hint</em>: you may find the <code>backup</code> and <code>restore</code> methods useful.</p>
 <p><em>Note</em>: as stated in the grammar, a <code>&lt;label&gt;</code> can be an <code>&lt;identifier&gt;</code> or a <code>&lt;keyword&gt;</code>.</p>
+<p><em>Examples</em>:</p>
+<ul>
+<li><code>label: 1</code> → <code>Labeled(Some(&quot;label&quot;), IntegerLiteral(1, …))</code></li>
+<li><code>match: 1</code> → <code>Labeled(Some(&quot;match&quot;), IntegerLiteral(1, …))</code></li>
+<li><code>1</code> → <code>Labeled(None, IntegerLiteral(1, …))</code></li>
+</ul>
 <h5><a href="#inparentheses-inbraces-inangles" id="inparentheses-inbraces-inangles"><code>inParentheses</code>, <code>inBraces</code>, <code>inAngles</code></a></h5>
 <p>Complete the three different functions that parses an <code>element</code> delimited by parentheses (<code>(&lt;element&gt;)</code>), braces (<code>{&lt;element&gt;}</code>) and angles (<code>&lt;&gt;</code>)</p>
 <h5><a href="#parenthesizedlabeledlistvalue---t-listlabeledt" id="parenthesizedlabeledlistvalue---t-listlabeledt"><code>parenthesizedLabeledList(value: () =&gt; T): List[Labeled[T]]</code></a></h5>
@@ -271,9 +283,9 @@ type Rectangle =
 <p>For example, the above function is responsible to parse the following code:</p>
 <pre><code class="language-swift">(1, 2, label: 3)
 </code></pre>
-<p>The functions <code>inParentheses</code>, <code>labeled</code> are useful to implement this function.</p>
+<p><em>Hint</em>: <code>inParentheses</code>, <code>labeled</code> and <code>commaSeparatedList</code> are useful to implement this function.</p>
 <h5><a href="#records" id="records">Records</a></h5>
-<p>In this part, you should implement <code>recordExpression()</code>, <code>recordExpressionFields()</code> and <code>record(fields: () =&gt; List[Field], make: (String, List[Field], …) =&gt; T)</code></p>
+<p>In this part, we will break down the record parsing. You should implement <code>recordExpression()</code>, <code>recordExpressionFields()</code> and <code>record(fields: () =&gt; List[Field], make: (String, List[Field], …) =&gt; T)</code></p>
 <ul>
 <li>
 <p>The <code>record</code> function is responsible for parsing a record. It returns a <code>T</code> AST node. In the case of parsing record expressions, <code>T</code> is <code>ast.Record</code>. It is general and will be used as well for <code>recordType</code>s</p>
@@ -289,16 +301,16 @@ type Rectangle =
 <p>Do forget that you can reuse parser functions you already implemented so far.</p>
 </div>
 <p>It should parse the following sub grammar:</p>
-<pre><code>RecordExpression := '#' Identifier ['(' LabeledExpressionList ')']
+<pre><code>Record -&gt; '#' Identifier  ['(' LabeledExpressionList ')']
 </code></pre>
 <div class="note">
 <p>An identifier with a <code>#</code> prefix is a special token called <code>Label</code>.</p>
-<p>Note as well that <code>Field</code> is a generic type! It should be of subtype <code>Labeled[Tree]</code> and <code>Labeled</code> is covariant. It will come handy when we will parse record types.</p>
+<p>Note as well that <code>Field</code> in <code>record(…)</code> is a generic type! It should be of subtype <code>Labeled[Tree]</code> and <code>Labeled</code> is covariant. It will come handy when we will parse record types.</p>
 </div>
 <h5><a href="#conditionals-conditional" id="conditionals-conditional">Conditionals <code>conditional()</code></a></h5>
 <p><code>if &lt;expression&gt; then &lt;expression&gt; else &lt;expression&gt;</code></p>
 <p>which correspond to:</p>
-<p><code>IfExpression := 'if' Expression 'then' Expression 'else' Expression</code> in the grammar.</p>
+<p><code>IfExpression -&gt; 'if' Expression 'then' Expression 'else' Expression</code> in the grammar.</p>
 <p>The <code>if</code> function has necessarily to have an <code>else</code> branch. The <code>else</code> branch is mandatory in <em>Alpine</em>.</p>
 <h5><a href="#tpe" id="tpe"><code>tpe()</code></a></h5>
 <p>The <code>tpe</code> function is responsible for parsing a type. It returns a <code>Type</code> AST node. For the fact, <code>tpe</code> is called <code>tpe</code> because <code>type</code> is a reserved keyword in Scala.</p>
@@ -307,7 +319,7 @@ type Rectangle =
 <p>Now, implement the <code>recordType</code> and <code>recordTypeFields</code> functions. They are responsible for parsing a record type and its fields. They should return a <code>RecordType</code> and a <code>List[Labeled[Type]]</code> respectively.</p>
 <p>In the same manner as <code>recordExpression</code> and <code>recordExpressionFields</code>, <code>recordType</code> should call the <code>record</code> function.</p>
 <h5><a href="#arroworparenthesizedtype" id="arroworparenthesizedtype"><code>arrowOrParenthesizedType()</code></a></h5>
-<p>When encountering a <code>(</code> token, it can be either a function&rsquo;s type or a parenthesized type. This function should parse the two cases and return the corresponding AST node.</p>
+<p>When encountering a <code>(</code> token, it can be either a function&rsquo;s type or a parenthesized type (a parenthesized type is a type between parentheses). This function should parse the two cases and return the corresponding AST node.</p>
 <p>It should parse both cases:</p>
 <ul>
 <li>Parenthesized type (<code>ParenthesizedType</code>):</li>
@@ -323,9 +335,9 @@ type Rectangle =
 <h5><a href="#bindings--let" id="bindings--let">Bindings &amp; let</a></h5>
 <h6><a href="#binding" id="binding"><code>binding()</code></a></h6>
 <p>A binding is a top-level declaration that binds an identifier to a value. It has the following form:</p>
-<pre><code>let &lt;identifier&gt; [':' &lt;type&gt;] [= expression]
+<pre><code>Binding -&gt; 'let' Identifier [':' Type] ['=' Expression]
 </code></pre>
-<p>where <code>[: &lt;type&gt;]</code> and <code>[= expression]</code> is not always optional: the argument <code>initializerIsExpected</code> is <code>true</code> if the initializer is expected (i.e. not optional) and <code>false</code> otherwise (i.e. optional): it may come handy for later! Implement the <code>binding()</code> function that parses a binding.</p>
+<p>where <code>[':' Type]</code> and <code>['=' Expression]</code> is not always optional: the argument <code>initializerIsExpected</code> is <code>true</code> if the initializer is expected (i.e. not optional) and <code>false</code> otherwise (i.e. optional): it may come handy for later! Implement the <code>binding()</code> function that parses a binding.</p>
 <h5><a href="#functions-function-valueparameterlist-parameter" id="functions-function-valueparameterlist-parameter">Functions: <code>function()</code>, <code>valueParameterList()</code>, <code>parameter()</code></a></h5>
 <h5><a href="#parameter" id="parameter"><code>parameter()</code></a></h5>
 <p>A parameter is of the form:</p>
@@ -333,16 +345,24 @@ type Rectangle =
 '_' &lt;identifier&gt; [: &lt;type&gt;] // unlabeled
 &lt;keyword&gt; &lt;identifier&gt; [: &lt;type&gt;] // labeled by keyword
 </code></pre>
-<p>When labeled by a keyword, the keyword is the label.</p>
-<p>When labeled, the parameter&rsquo;s name (i.e. its identifier inside the function) is the second identifier.</p>
-<p>When unlabeled, the parameter&rsquo;s name is the first and only identifier.</p>
+<p>In the first case, the first element is the label of the parameter (can be an identifier, <code>_</code> or a keyword) and the second element is the name of the argument. When labeled by a keyword, the keyword is the label. When labeled, the parameter&rsquo;s name (i.e. its identifier inside the function) is the second identifier. When unlabeled (i.e. <code>_</code> is the label), the parameter&rsquo;s name is the first and only identifier.</p>
 <p>Implement the <code>parameter</code> function that parses a parameter. It returns a <code>Parameter</code> AST node.</p>
 <p><em>Note</em>: here the label is before the identifier without any separator token. It is not the case for <code>labeled</code> where the label is separated by a colon with the identifier.</p>
+<ul>
+<li>Examples:
+<ul>
+<li><code>_ x: Int</code>: <code>Parameter(None, &quot;x&quot;, Some(TypeIdentifier(&quot;Int&quot;, _)), _)</code></li>
+<li><code>label x: Int</code>: <code>Parameter(Some(&quot;label&quot;), &quot;x&quot;, Some(TypeIdentifier(&quot;Int&quot;, _)), _)</code></li>
+<li><code>label x</code>: <code>Parameter(Some(&quot;label&quot;), &quot;x&quot;, None, _)</code></li>
+</ul>
+</li>
+</ul>
 <h6><a href="#valueparameterlist" id="valueparameterlist"><code>valueParameterList()</code></a></h6>
 <p>A value parameter list is a list of parameters. It has the following form:</p>
 <pre><code>( &lt;parameter1&gt;, … )
 </code></pre>
 <p>Implement the <code>valueParameterList</code> function that parses a value parameter list. It returns a <code>List[Parameter]</code> AST node.</p>
+<p><em>Hint</em>: you may find the <code>commaSeparatedList</code> function and <code>parameter()</code> useful.</p>
 <h5><a href="#function" id="function"><code>function()</code></a></h5>
 <p>A function is of the form:</p>
 <pre><code>fun &lt;identifier&gt; (&lt;type parameters&gt;) [-&gt; &lt;type&gt;] { &lt;expression&gt; }
@@ -354,8 +374,10 @@ type Rectangle =
 <pre><code>(&lt;expression&gt;)
 </code></pre>
 <p>and</p>
-<pre><code>(&lt;value parameter list&gt;) -&gt; { &lt;expression&gt; }
+<pre><code>(&lt;value parameter list&gt;) -&gt; [type] { &lt;expression&gt; }
 </code></pre>
+<p>where <code>[type]</code> is optional.</p>
+<p><em>Hint</em>: <code>backup</code> and <code>restore</code> may come handy.</p>
 <h5><a href="#match-expressions" id="match-expressions">Match expressions</a></h5>
 <p>A match expression is a conditional expression that matches a value against a set of patterns. It has the following form:</p>
 <pre><code class="language-swift">match &lt;expression&gt; {

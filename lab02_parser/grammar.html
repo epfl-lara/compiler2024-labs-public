@@ -37,12 +37,13 @@
 <body class="markdown-body">
 <div id="container">
 <main>
-<p class="updated">Last updated on <time datetime=2024-03-01T16:30:04>Friday, March 01, 2024</time></p>
+<p class="updated">Last updated on <time datetime=2024-03-03T23:47:32>Sunday, March 03, 2024</time></p>
 <h1><a href="#alpine-grammar" id="alpine-grammar">Alpine grammar</a></h1>
 <h2><a href="#notation" id="notation">Notation</a></h2>
 <ul>
 <li><code>list(X)</code> denotes a list of <code>X</code> elements, possibly empty, separated by <code>,</code>. For example. <code>IntegerList -&gt; list(Integer)</code> represents lists like <code>1 , 2 , 3</code>, <code></code>, or <code>1</code>.</li>
 <li><code>[ X ]</code> denotes an optional <code>X</code>. For example, <code>['+']</code> represents <code>+</code> or nothing.</li>
+<li><code>X1 | X2 | …</code> denotes a choice between the elements <code>X1</code>, <code>X2</code>, …. For example, <code>('+' | '-')</code> represents <code>+</code> or <code>-</code>.</li>
 </ul>
 <h2><a href="#grammar" id="grammar">Grammar</a></h2>
 <pre><code class="language-grammar">Program -&gt; list(Declaration)
@@ -68,9 +69,12 @@ Ascribed -&gt; PrefixExpression [('@' | '@!' | '@?')  Type]
 // The choice between 1st and 2nd here depends on whether there is a whitespace after the operator (2) or not (1) 
 PrefixExpression -&gt; InfixOp | InfixOp CompoundExpression | CompoundExpression
 
-CompoundExpression -&gt; PrimaryExpression ['.' Integer  | '.' Identifier  | '.' InfixOp  | '(' LabeledExpressionList ')']*
+CompoundExpression -&gt; PrimaryExpression CompoundExpression2
+CompoundExpression2 -&gt; ε |  ['.' Integer  | '.' Identifier  | '.' InfixOp  | '(' LabeledExpressionList ')'] CompoundExpression2
 
 PrimaryExpression -&gt; Identifier | Literal | Record | IfExpression | MatchExpression | LetExpression | '(' Expression ')' | LambdaDef
+
+LambdaDef -&gt; '(' ValueParameterList ')' ['-&gt;' Type] '{' Expression '}'
 
 Literal -&gt; IntegerLiteral | FloatLiteral | StringLiteral | BooleanLiteral
 
