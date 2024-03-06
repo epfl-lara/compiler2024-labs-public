@@ -1,9 +1,7 @@
-# Lab 02 - Interpreter
+# Lab 02 - Parser
 
 
-Welcome to the Compiler course 2024!
-
-In this first lab, you will implement an interpreter for the Alpine language, the language for which we will write the entire compiler during the semester.
+In this second lab, you will implement the parser for the Alpine compiler.
 
 ## Obtaining the lab files
 
