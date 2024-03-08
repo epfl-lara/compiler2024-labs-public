@@ -47,6 +47,8 @@ LabeledExpressionList -> list(LabeledExpression)
 LabelExpression -> [Label ':'] Expression
 Label -> Identifier | Keyword
 
+RecordType -> '#' Identifier [ '(' list(LabeledType) ')' ]
+LabeledType -> [Identifier ':'] Type
 
 IfExpression -> 'if' Expression 'then' Expression 'else' Expression
 
