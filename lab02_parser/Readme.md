@@ -280,7 +280,7 @@ As we saw in the lecture, parsing expressions requires care because of the ambig
 
 Notice that infixEpression takes a precendence as input: you may use it this parameter to factor out the parsing of all possible infix expressions with different precedence levels.
 
-You may take inspiration from the precedence climbing algorithm to parse infix expressions. See [the Wikipedia article]("https://en.wikipedia.org/wiki/Operator-precedence_parser#Precedence_climbing_method") for more information.
+You may take inspiration from the precedence climbing algorithm to parse infix expressions. See [the Wikipedia article](https://en.wikipedia.org/wiki/Operator-precedence_parser#Precedence_climbing_method) for more information.
 
 ##### Literals
 
