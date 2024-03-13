@@ -218,14 +218,12 @@ fun f(x: Float) -&gt; Float { x }
 <h3><a href="#hints-and-inference-rules" id="hints-and-inference-rules">Hints and inference rules</a></h3>
 <p>Below are listed hints about the visit functions you have to implement, along with the inference rules of the alpine type system.</p>
 <h4><a href="#visitrecorde-astrecord" id="visitrecorde-astrecord"><code>visitRecord(e: ast.Record)</code></a></h4>
-<p>$$
-\frac{
+<p>$$\frac{
 \Gamma \vdash e_1 : \tau_1 \quad \Gamma e_2 : \tau_  \Gamma \quad \dots \quad \Gamma e_n \quad \Gamma: \tau_n
 }{
-#a(a_1: e_1, a_2: e_2, \dots, a_n: e_n): #a(a_1: \tau_1, a_2: \tau_2, \dots, a_n :\tau_n)
-} \quad
-$$</p>
-<p>where $#a$ is the record name and $a_1$, …, $a_n$ are the labels.</p>
+\char&quot;23 a(a_1: e_1, a_2: e_2, \dots, a_n: e_n): \char&quot;23 a(a_1: \tau_1, a_2: \tau_2, \dots, a_n :\tau_n)
+}$$</p>
+<p>where $\char&quot;23 a$ is the record name and $a_1$, …, $a_n$ are the labels.</p>
 <p>For each field of the record, you should visit recursively the expression of the field to get field types.</p>
 <h4><a href="#visitapplicatione-astapplication" id="visitapplicatione-astapplication"><code>visitApplication(e: ast.Application)</code></a></h4>
 <p>Two constraints should be addeed:</p>
@@ -334,7 +332,7 @@ $$</p>
 \frac{
 \Gamma \vdash \tau_1: \text{Meta}[\text{Labeled}] \quad \ldots \quad \Gamma \tau_n: \text{Meta}[\text{Labeled}] \quad \Gamma\tau_r: \text{Meta}[\tau_r]
 }{
-\Gamma \vdash #a(\tau_1, \ldots, \tau_n) \to \tau_r
+\Gamma \vdash \char&quot;23 a(\tau_1, \ldots, \tau_n) \to \tau_r
 }
 $$</p>
 <p>Note that $\tau_1$, …, $\tau_n$ are labelled types.</p>
@@ -360,10 +358,10 @@ $$</p>
 <p>On the same principle as the <code>visitRecord</code> method and <code>visitValuePattern</code>, you should add a constraint for the type of the pattern.</p>
 <p>$$
 \frac{\Gamma \vdash}{
-\Gamma \vdash #a(l_1: p_1, \ldots, l_n: p_n): #a(l_1: \tau_1, \ldots, l_n: \tau_n)
+\Gamma \vdash \char&quot;23 a(l_1: p_1, \ldots, l_n: p_n): \char&quot;23 a(l_1: \tau_1, \ldots, l_n: \tau_n)
 }
 $$</p>
-<p>where $#a$ is the record name and $l_1$, …, $l_n$ are the labels.</p>
+<p>where $\char&quot;23 a$ is the record name and $l_1$, …, $l_n$ are the labels.</p>
 <h4><a href="#visitwildcard" id="visitwildcard"><code>visitWildcard</code></a></h4>
 <p>$$
 \frac{\Gamma \vdash}{
@@ -393,7 +391,7 @@ $$</p>
 <p>For the integer selector:</p>
 <p>$$
 \frac{
-\Gamma \vdash e: #a(l_1: \tau_1, \dots, l_n:\tau_n)
+\Gamma \vdash e: \char&quot;23 a(l_1: \tau_1, \dots, l_n:\tau_n)
 }{
 \Gamma \vdash e.i: \tau_i
 }
@@ -401,10 +399,11 @@ $$</p>
 <p>For the identifier selector:</p>
 <p>$$
 \frac{
-\Gamma \vdash e: #a(l_1: \tau_1, \dots, l_n:\tau_n)
+\Gamma \vdash e: \char&quot;23 a(l_1: \tau_1, \dots, l_n:\tau_n)
 }{
 \Gamma \vdash e.l_i: \tau_i
-}</p>
+}
+$$</p>
 
 </main>
 </div>

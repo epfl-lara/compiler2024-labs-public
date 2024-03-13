@@ -241,15 +241,13 @@ Below are listed hints about the visit functions you have to implement, along wi
 
 #### `visitRecord(e: ast.Record)`
 
-$$
-\frac{
+$$\frac{
   \Gamma \vdash e_1 : \tau_1 \quad \Gamma e_2 : \tau_  \Gamma \quad \dots \quad \Gamma e_n \quad \Gamma: \tau_n
 }{
-  \#a(a_1: e_1, a_2: e_2, \dots, a_n: e_n): \#a(a_1: \tau_1, a_2: \tau_2, \dots, a_n :\tau_n)
-} \quad
-$$
+  \char"23 a(a_1: e_1, a_2: e_2, \dots, a_n: e_n): \char"23 a(a_1: \tau_1, a_2: \tau_2, \dots, a_n :\tau_n)
+}$$
 
-where $\#a$ is the record name and $a_1$, …, $a_n$ are the labels.
+where $\char"23 a$ is the record name and $a_1$, …, $a_n$ are the labels.
 
 For each field of the record, you should visit recursively the expression of the field to get field types.
 
@@ -400,7 +398,7 @@ $$
 \frac{
   \Gamma \vdash \tau_1: \text{Meta}[\text{Labeled}] \quad \ldots \quad \Gamma \tau_n: \text{Meta}[\text{Labeled}] \quad \Gamma\tau_r: \text{Meta}[\tau_r]
 }{
-  \Gamma \vdash \#a(\tau_1, \ldots, \tau_n) \to \tau_r
+  \Gamma \vdash \char"23 a(\tau_1, \ldots, \tau_n) \to \tau_r
 }
 $$
 
@@ -436,11 +434,11 @@ On the same principle as the `visitRecord` method and `visitValuePattern`, you s
 
 $$
 \frac{\Gamma \vdash}{
-  \Gamma \vdash \#a(l_1: p_1, \ldots, l_n: p_n): \#a(l_1: \tau_1, \ldots, l_n: \tau_n)
+  \Gamma \vdash \char"23 a(l_1: p_1, \ldots, l_n: p_n): \char"23 a(l_1: \tau_1, \ldots, l_n: \tau_n)
 }
 $$
 
-where $\#a$ is the record name and $l_1$, …, $l_n$ are the labels.
+where $\char"23 a$ is the record name and $l_1$, …, $l_n$ are the labels.
 
 #### `visitWildcard`
 
@@ -482,7 +480,7 @@ For the integer selector:
 
 $$
 \frac{
-  \Gamma \vdash e: \#a(l_1: \tau_1, \dots, l_n:\tau_n)
+  \Gamma \vdash e: \char"23 a(l_1: \tau_1, \dots, l_n:\tau_n)
 }{
   \Gamma \vdash e.i: \tau_i
 }
@@ -492,7 +490,8 @@ For the identifier selector:
 
 $$
 \frac{
-  \Gamma \vdash e: \#a(l_1: \tau_1, \dots, l_n:\tau_n)
+  \Gamma \vdash e: \char"23 a(l_1: \tau_1, \dots, l_n:\tau_n)
 }{
   \Gamma \vdash e.l_i: \tau_i
 }
+$$
