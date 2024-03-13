@@ -37,7 +37,7 @@
 <body class="markdown-body">
 <div id="container">
 <main>
-<p class="updated">Last updated on <time datetime=2024-02-21T16:57:56>Wednesday, February 21, 2024</time></p>
+<p class="updated">Last updated on <time datetime=2024-02-23T17:06:45>Friday, February 23, 2024</time></p>
 <h1><a href="#lab-01---interpreter" id="lab-01---interpreter">Lab 01 - Interpreter</a></h1>
 <p>Welcome to the Compiler course 2024!</p>
 <p>In this first lab, you will implement an interpreter for the Alpine language, the language for which we will write the entire compiler during the semester.</p>
@@ -350,7 +350,7 @@ let main = print(scale(2))
 <li><code>matchesWildcard</code> matches any value and returns an empty <code>Frame</code></li>
 <li><code>matchesValue</code> matches the exact value and returns an empty <code>Frame</code></li>
 <li><code>matchesBinding</code> matches a binding and returns a <code>Frame</code> with the bindings if any. Be careful, the type of the binding must match as well.</li>
-<li><code>matchesRecord</code> matches a record with the same name and the same fields, and returns a <code>Frame</code> with the bindings if any. Note that the fields of the record can be expressions and that the patterns for the fields should be recursively matched. Be careful, the record type must match as well (you can use <code>Pattern.record#dynamicType</code> and <code>structurallyMatches</code>.)</li>
+<li><code>matchesRecord</code> matches a record with the same name and the same fields, and returns a <code>Frame</code> with the bindings if any. Note that the fields of the record can be expressions and that the patterns for the fields should be recursively matched. Be careful, the record type must match as well (you can use <code>pattern.tpe</code> and <code>structurallyMatches</code>.)</li>
 </ul>
 <h3><a href="#step-8-lambdas" id="step-8-lambdas">Step 8: Lambdas</a></h3>
 <p>We have seen lambda functions. However, we have not implemented the <code>visitLambda</code> method.</p>

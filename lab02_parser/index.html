@@ -37,10 +37,9 @@
 <body class="markdown-body">
 <div id="container">
 <main>
-<p class="updated">Last updated on <time datetime=2024-03-04T22:24:18>Monday, March 04, 2024</time></p>
-<h1><a href="#lab-02---interpreter" id="lab-02---interpreter">Lab 02 - Interpreter</a></h1>
-<p>Welcome to the Compiler course 2024!</p>
-<p>In this first lab, you will implement an interpreter for the Alpine language, the language for which we will write the entire compiler during the semester.</p>
+<p class="updated">Last updated on <time datetime=2024-03-08T16:25:52>Friday, March 08, 2024</time></p>
+<h1><a href="#lab-02---parser" id="lab-02---parser">Lab 02 - Parser</a></h1>
+<p>In this second lab, you will implement the parser for the Alpine compiler.</p>
 <h2><a href="#obtaining-the-lab-files" id="obtaining-the-lab-files">Obtaining the lab files</a></h2>
 <p>To get the lab files, you have 2 options:</p>
 <ul>
@@ -168,7 +167,7 @@
 <li><code>expect(construct: String, pred: Token =&gt; Boolean)</code>: same as <code>expect</code> but takes a construct to include in the error message.</li>
 <li><code>report</code>: reports an error while parsing.</li>
 <li><code>snapshot</code>: returns the current state of the parser</li>
-<li><code>restore</code> : restores the state of the parser from a backup returned by <code>backup</code></li>
+<li><code>restore</code> : restores the state of the parser from a backup returned by <code>snapshot</code></li>
 </ul>
 <h3><a href="#new-elements-of-the-language" id="new-elements-of-the-language">New elements of the language</a></h3>
 <p>Throughout the lab, we will see new elements of the language.</p>
@@ -192,7 +191,7 @@ type Rectangle =
 <h2><a href="#implementation" id="implementation">Implementation</a></h2>
 <h3><a href="#some-hints" id="some-hints">Some hints</a></h3>
 <p>The parser is written in composing functions, that each parses a part of the grammar.</p>
-<p>For example, let&rsquo;s have a look at the <code>primarayExpression()</code> function. This function <code>peek</code> at the next token, and depending on its nature, calls the appropriate function to parse the corresponding producing rule of the grammar.</p>
+<p>For example, let&rsquo;s have a look at the <code>primaryExpression()</code> function. This function <code>peek</code> at the next token, and depending on its nature, calls the appropriate function to parse the corresponding producing rule of the grammar.</p>
 <div class='snippet'>
 <pre><code class="language-scala">private[parsing] def primaryExpression(): Expression =
   peek match
@@ -247,7 +246,7 @@ type Rectangle =
 <p>A prefix expression checks if the next token is an operator. <strong>If there is no space between the operator and the next token</strong> (see <code>noWhitespaceBeforeNextToken</code>), parse the prefix operator and the compound expression that follows. It returns a <code>PrefixApplication</code> AST node. The fact we have to check for white space presence shows us that this gammar is not a context-free grammar.</p>
 <p>If there is a whitespace, then it returns directly the operator (recall: it&rsquo;s an <code>Identifier</code>.)</p>
 <p>In the case where it is not an operator, it will parse the compound expression (so call the <code>compoundExpression()</code> function.)</p>
-<h5><a href="#ascribedexpression" id="ascribedexpression"><code>ascribedExpression()</code></a></h5>
+<h5><a href="#ascribed" id="ascribed"><code>ascribed()</code></a></h5>
 <p>An ascribed expression is a prefix expression followed by an optional type cast. It returns a <code>AscribedExpression</code> AST node if there is a type cast, otherwise just a prefix expression. You can use the <code>typecast</code> function.</p>
 <p>Example:</p>
 <ul>
@@ -258,7 +257,7 @@ type Rectangle =
 <h5><a href="#infixexpression-and-expression" id="infixexpression-and-expression"><code>infixExpression</code> and <code>expression()</code></a></h5>
 <p>As we saw in the lecture, parsing expressions requires care because of the ambiguity introduced by precedence.</p>
 <p>Notice that infixEpression takes a precendence as input: you may use it this parameter to factor out the parsing of all possible infix expressions with different precedence levels.</p>
-<p>You may take inspiration from the precedence climbing algorithm to parse infix expressions. See <a href="&quot;https://en.wikipedia.org/wiki/Operator-precedence_parser#Precedence_climbing_method&quot;">the Wikipedia article</a> for more information.</p>
+<p>You may take inspiration from the precedence climbing algorithm to parse infix expressions. See <a href="https://en.wikipedia.org/wiki/Operator-precedence_parser#Precedence_climbing_method">the Wikipedia article</a> for more information.</p>
 <h5><a href="#literals" id="literals">Literals</a></h5>
 <p>To get the text a token contain, you can use the <code>.site.text</code> method.</p>
 <h5><a href="#labeled" id="labeled"><code>labeled(…)</code></a></h5>
@@ -268,7 +267,7 @@ type Rectangle =
 <li><code>&lt;value&gt;</code></li>
 <li><code>&lt;label&gt;: &lt;value&gt;</code></li>
 </ul>
-<p><em>Hint</em>: you may find the <code>backup</code> and <code>restore</code> methods useful.</p>
+<p><em>Hint</em>: you may find the <code>snapshot</code> and <code>restore</code> methods useful.</p>
 <p><em>Note</em>: as stated in the grammar, a <code>&lt;label&gt;</code> can be an <code>&lt;identifier&gt;</code> or a <code>&lt;keyword&gt;</code>.</p>
 <p><em>Examples</em>:</p>
 <ul>
@@ -374,10 +373,10 @@ type Rectangle =
 <pre><code>(&lt;expression&gt;)
 </code></pre>
 <p>and</p>
-<pre><code>(&lt;value parameter list&gt;) -&gt; [type] { &lt;expression&gt; }
+<pre><code>(&lt;value parameter list&gt;) [-&gt; type] { &lt;expression&gt; }
 </code></pre>
-<p>where <code>[type]</code> is optional.</p>
-<p><em>Hint</em>: <code>backup</code> and <code>restore</code> may come handy.</p>
+<p>where <code>[-&gt; type]</code> is optional.</p>
+<p><em>Hint</em>: <code>snapshot</code> and <code>restore</code> may come handy.</p>
 <h5><a href="#match-expressions" id="match-expressions">Match expressions</a></h5>
 <p>A match expression is a conditional expression that matches a value against a set of patterns. It has the following form:</p>
 <pre><code class="language-swift">match &lt;expression&gt; {

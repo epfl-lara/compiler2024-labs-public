@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Typer</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github.min.css" media="screen" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github-dark.min.css" media="screen and (prefers-color-scheme: dark)" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.5.1/github-markdown.min.css">
+  <style>
+	.markdown-body {
+		box-sizing: border-box;
+		min-width: 200px;
+		max-width: 980px;
+		margin: 0 auto;
+		padding: 45px;
+	}
+
+	@media (max-width: 767px) {
+		.markdown-body {
+			padding: 15px;
+		}
+	}
+
+  .snippet pre {
+    margin-bottom: .1em;
+  }
+
+  .snippet-path {
+    font-size: 0.8em;
+    font-style: italic;
+    text-align: right;
+  }
+  </style>
+</head>
+<body class="markdown-body">
+<div id="container">
+<main>
+<p class="updated">Last updated on <time datetime=2024-03-12T17:21:46>Tuesday, March 12, 2024</time></p>
+<h1><a href="#lab-03---typer" id="lab-03---typer">Lab 03 - Typer</a></h1>
+<p>In this third, you will implement the typer for the Alpine compiler.</p>
+<h2><a href="#obtaining-the-lab-files" id="obtaining-the-lab-files">Obtaining the lab files</a></h2>
+<p>To get the lab files, you have 2 options:</p>
+<ul>
+<li>
+<p>pull this repository if you already cloned it last week. Otherwise, you can clone it by running the following command:</p>
+<pre><code class="language-console">$ git pull
+</code></pre>
+<p>or</p>
+<pre><code class="language-console">$ git clone https://github.com/epfl-lara/compiler2024-labs-public.git
+</code></pre>
+</li>
+<li>
+<p>Download the zip file on Moodle</p>
+</li>
+</ul>
+<p>Then take your current <code>alpine</code> project, i.e., where you implemented the interpreter and the parser, and:</p>
+<ul>
+<li>copy the <code>typing/</code> directory from this week (either from zip or repo) into your <code>alpine</code> project at this place: <code>src/main/scala/alpine/typing</code></li>
+<li>copy the <code>Main.scala</code> file from this week (either from zip or repo) into your <code>alpine</code> project at this place: <code>src/main/scala/Main.scala</code></li>
+<li>copy the <code>driver/</code> directory from this week (either from zip or repo) into your <code>alpine</code> project at this place: <code>src/main/scala/alpine/driver</code></li>
+<li>copy the new test files by copying the <code>test/typing</code> directory from this week (either from zip or repo) into your <code>alpine</code> project at this place: <code>src/test/scala/alpine/typing</code></li>
+<li>move the interpreter tests from <code>archive/test/evaluation</code> back to<code>src/test/scala/alpine/evaluation</code>.</li>
+</ul>
+<p>Your project directory structure should look like something like this:</p>
+<pre><code class="language-console">alpine/
+├── archive/                                 &lt;----- YOU CAN DELETE THIS DIRECTORY
+│   ├── test/
+│   │   ├── evaluation/                    
+│   │   │   ├── InterpreterTest.scala
+├── src/
+│   ├── main/
+│   │   ├── scala/
+│   │   │   ├── alpine/
+│   │   │   │   ├── driver/                  &lt;----- COPY FROM THIS WEEK FILES (replace the current one)
+│   │   │   │   ├── evaluation/
+│   │   │   │   │   ├── Interpreter.scala
+│   │   │   │   ├── parsing/                 
+│   │   │   │   │   ├── Parser.scala
+│   │   │   │   │   ├── ...
+│   │   │   │   ├── typing/                   &lt;----- COPY FROM THIS WEEK FILES
+│   │   │   │   │   ├── Typer.scala
+│   │   │   │   │   ├── ...
+│   │   │   │   ├── util/                    
+│   │   │   │   │   ├── ...
+│   │   │   ├── Main.scala                   &lt;----- COPY FROM THIS WEEK FILES (replace the current one)
+├── test/
+│   ├── scala/
+│   │   ├── alpine/
+│   │   │   ├── evaluation/                  &lt;----- MOVE BACK FROM ARCHIVE
+│   │   │   │   ├── InterpreterTest.scala
+│   │   │   ├── parsing/                     
+│   │   │   │   ├── ...
+│   │   │   ├── typing/                       &lt;----- COPY FROM THIS WEEK FILES
+│   │   │   │   ├── TyperTest.scala
+│   │   │   ├── util/                        
+</code></pre>
+<h2><a href="#submit-your-work" id="submit-your-work">Submit your work</a></h2>
+<p>To submit your work, go to this week assignment on Moodle and upload the following file:</p>
+<ul>
+<li><code>src/main/scala/alpine/typing/Typer.scala</code></li>
+</ul>
+<h2><a href="#general-idea-of-the-project" id="general-idea-of-the-project">General idea of the project</a></h2>
+<p>Let&rsquo;s recall the global idea of a simple compiler&rsquo;s pipeline:</p>
+<pre><code>Source code -&gt; Lexer -&gt; Parser -&gt; Type checking -&gt; Assembly generation
+</code></pre>
+<p>During this lab, you will implement the type checking phase of the Alpine compiler. Note that it does three things:</p>
+<ul>
+<li>It checks that the program is well-typed, i.e. that the types of the expressions are consistent with the types of the variables, the types of the functions (including the fact that the function is called with the right number of arguments and that the types of the arguments are consistent with the types of the parameters), and the types of the constants.</li>
+<li>It also infers the types of expressions that do not have a type ascription, i.e. it computes the type of each expression and stores it in the AST.</li>
+<li>It also perform “name resolution”: every variable and function call should be resolved to a unique definition (this is the <code>referredEntity</code> field from the interpreter lab.) For example, if the program contains two function definitions <code>fun f(x: Int) -&gt; Int { ... }</code> and <code>fun f(x: Float) -&gt; Float { ... }</code>, then the call <code>f(42)</code> should be resolved to one of the two definitions. The choice of the definition depends on the type of the argument <code>42</code>.</li>
+</ul>
+<h3><a href="#supported-language-features" id="supported-language-features">Supported language features</a></h3>
+<p>The type checker supports all the features described in the language description (i.e., in this <a href="&quot;language_desc.md&quot;">file</a>), EXCEPT the <em><strong>Type declarations</strong></em>. This means, your typer does not have to handle the constructs of the form</p>
+<pre><code class="language-swift">type T = Int
+type ListInt = #nil | #cons(head: Int, tail: ListInt)
+</code></pre>
+<p>Specifically, the subset of the language that the typer will handle does NOT include recursive types.</p>
+<h3><a href="#basics" id="basics">Basics</a></h3>
+<p>The typer will be implemented in the <code>Typer.scala</code> file. It will visit the AST and return the computed/discovered types after having checked their consistence.</p>
+<h4><a href="#constraints" id="constraints">Constraints</a></h4>
+<p>To solve the typing problem, we will generate a set of constraints and solve them using the provided <code>Solver</code>.</p>
+<p>Here are the available constraints that the solver can handle:</p>
+<ul>
+<li><code>Equal(lhs: Type, rhs: Type, origin: Origin)</code>: the left hand side and the right hand side should have the same type.</li>
+<li><code>Subtype(lhs: Type, rhs: Type, origin: Origin)</code>: the left hand side should be a subtype of the right hand side.</li>
+<li><code>Apply(function: Type, inputs: List[Type.Labeled], output: Type, origin: Origin)</code>: the function should be a function type with the given inputs and output types.</li>
+<li><code>Member(lhs: Type, rhs: Type, member: String | Int, selection: Expression, origin: Origin)</code>: the left hand side should have a member with the type <code>rhs</code>, i.e., something of the <code>lhs.member: rhs</code>. <code>selection</code> is the expression of the member selection.</li>
+<li><code>Overload(name: Tree, candidates: List[EntityReference], tpe: Type, origin: Origin)</code>: this constraint is responsible of the name analysis mentioned above. The name should be the name of entity (e.g., a function names) that can refer to multiple entities. All those entities are passed in  <code>candidates</code>. This constraint indicates to the solver that one of the entity in the list should have the type <code>tpe</code>. The <code>Solver</code> will then pick the right entity if it exists. This is how the <code>Typer</code> will resolve the ambiguity of the function call <code>f(42)</code> mentioned above.</li>
+</ul>
+<p>The origin is the AST node that generated this constraint (this is to show a meaningful error to the user in case the constraint cannot be solved).</p>
+<p>All of those constraints are stored in an instance of the <code>ProofObligations</code> class that will be passed to the solver.</p>
+<p>To add new constraints you can use:</p>
+<ul>
+<li><code>context.obligations.constrain(e, type)</code> to add an equality constraint that the expression <code>e</code> should have type <code>type</code>. This function also returns the currently inferred type of <code>e</code>.</li>
+<li><code>context.obligations.add(constraint)</code> to add a constraint <code>constraint</code> to the obligations (any type of constraint, unlike the other possible function).</li>
+</ul>
+<h4><a href="#fresh-type-variables" id="fresh-type-variables">Fresh type variables</a></h4>
+<p>When infering types, it is not always possible to know the type of an expression when encountering it. For example, let us take the following code:</p>
+<pre><code class="language-swift">let a = 1
+let x = if (a &lt;= 0) { #person(name: &quot;Jean&quot;) } else { #person(name: &quot;Jean&quot;, age: a) }
+</code></pre>
+<p>In this case, when typing the <code>if</code> expression, we cannot fix the type of the <code>then</code> and <code>else</code> branches. This is because we do not know the type of <code>x</code> (we are inferring it), and we only know that the type of an <code>if</code> expression is a <em>supertype</em> of the types of the <code>then</code> and <code>else</code> branches.</p>
+<p>So to infer the type of <code>x</code>, we assign it a <em>fresh type variable</em> $\tau$, and we add constraint for this type. The <code>Solver</code> is then responsible to find a type for $\tau$ that satisfies all the constraints.</p>
+<p>To generate a fresh type variable, please use the <code>freshTypeVariable()</code> method.</p>
+<h4><a href="#visitor" id="visitor">Visitor</a></h4>
+<p>We have provided the implementations of the <code>visit</code> function of identifiers and literals, as well as for the pattern matching. You will have to implement the <code>visit</code> functions for the other AST nodes.</p>
+<pre><code class="language-scala">def visitBooleanLiteral(e: ast.BooleanLiteral)(using context: Typer.Context): Type =
+  context.obligations.constrain(e, Type.Bool)
+
+def visitIntegerLiteral(e: ast.IntegerLiteral)(using context: Typer.Context): Type =
+  context.obligations.constrain(e, Type.Int)
+
+def visitFloatLiteral(e: ast.FloatLiteral)(using context: Typer.Context): Type =
+  context.obligations.constrain(e, Type.Float)
+
+def visitStringLiteral(e: ast.StringLiteral)(using context: Typer.Context): Type =
+  context.obligations.constrain(e, Type.String)
+</code></pre>
+<p>In each of these methods, we add a new constraint that the visited AST node is of type <code>Type.Bool</code>, <code>Type.Int</code>, <code>Type.Float</code> or <code>Type.String</code> respectively.</p>
+<pre><code class="language-scala">def visitIdentifier(e: ast.Identifier)(using context: Typer.Context): Type =
+  bindEntityReference(e, resolveUnqualifiedTermIdentifier(e.value, e.site))
+</code></pre>
+<p>In this method, we make calls to:</p>
+<ul>
+<li><code>resolveUnqualifiedTermIdentifier</code> to resolve the identifier to a list of possible entities. This step will find all the entities that the identifier can refer to. For example, if the identifier is <code>f</code>, it will return all the functions that are named <code>f</code>.</li>
+<li><code>bindEntityReference(e: ast.Tree, candidates: List[EntityReference])</code> to bind the AST node to the resolved entities
+<ul>
+<li>if there is no candidates, then the type of <code>e</code> is <code>Type.Error</code></li>
+<li>if there is a single candidate, then the type of <code>e</code> is the type of the candidate. Moreover, it links the AST node to the candidate using the <code>properties.treeToReferredEntity</code> map.</li>
+<li>if there is more than a single candidate, then a new fresh type variable $\tau$ is created and the AST node is linked to the type variable $\tau$. Moreover, a new <code>Overload</code> constraint is added to the obligations to say that the type of <code>e</code> is the type of one of the candidates. Also, a constraint is added to say that the type of <code>e</code> is $\tau$.</li>
+</ul>
+</li>
+</ul>
+<p>Note that there is some useful functions in the <code>Typer</code> class that you can use to generate fresh type variables, get the type of an entity, check if a type is a subtype of another, etc.</p>
+<h3><a href="#scope" id="scope">Scope</a></h3>
+<p>In programming, the <em>Scope</em> of a binding is defined as follows:</p>
+<blockquote>
+<p>[The ] scope is &ldquo;the portion of source code in which a binding of a name with an entity applies&rdquo;.</p>
+</blockquote>
+<p>For example, in the following code:</p>
+<pre><code class="language-swift">fun f(x: Int) -&gt; Int {
+  let y = 42 {
+    x + y
+  }
+}
+let main = let z = 1 {
+  f(z)
+}
+</code></pre>
+<p>the scope of the binding of <code>y</code> is  the body of the <code>let</code> binding, so:</p>
+<pre><code class="language-swift">{
+  x + y
+}
+</code></pre>
+<p>and the scope ot the binding of <code>x</code> is the body of the function <code>f</code>, so:</p>
+<pre><code class="language-swift">{
+  let y = 42 {
+    x + y
+  }
+}
+</code></pre>
+<h3><a href="#running-the-type-checker" id="running-the-type-checker">Running the type checker</a></h3>
+<p>Inside SBT, you can use the <code>run -t &lt;input file&gt;</code> command to run the type checker on a file. You can also add the <code>--type-inference</code> flag to show the solving part of the type checker (so including the constraints and the solution).</p>
+<h3><a href="#how-is-overloading-solved" id="how-is-overloading-solved">How is overloading solved?</a></h3>
+<p>Let us recall that overloading is the ability to have multiple functions with the same name but different types. For example, in the following code:</p>
+<pre><code class="language-swift">fun f(x: Int) -&gt; Int { x }
+fun f(x: Float) -&gt; Float { x }
+</code></pre>
+<p>the function <code>f</code> is overloaded. When the type checker encounters a call to <code>f</code>, it should resolve the call to one of the two functions. This is what the <code>Overload</code> constraint is for.</p>
+<p>Overloading is resolved by the <code>Solver</code> class. For every <code>Overload</code> constraint and their candidates, the solver forks itself and tries to solve the other constraints with each candidate (i.e., type checking the program assuming the candidate is the right one). If one of the forks fails, the solver backtracks and tries with the next candidate. If all the forks fail, the solver reports an error. And if one of the forks succeeds, the solver returns the solution.</p>
+<p>If you run the compiler with the <code>--trace-inference</code> flag with a piece of code that contains some overload, you will see that the solver tries to solve the constraints with each candidate.</p>
+<h3><a href="#memoization" id="memoization">Memoization</a></h3>
+<p>You can see some calls to <code>memoizedUncheckedType</code>. Its role is to store the type of a tree node in an <em>unchecked</em> map. This means the type is temporary, but not checked yet.</p>
+<p>This is used for recursive functions: the type of the function is stored in this map, so that the body can be typechecked while &ldquo;knowing&rdquo; the type of the function itself (for possible recursive calls). This is also used for recursive types, but we do not handle them in this lab.</p>
+<p>This is also used for memoization, i.e., not recomputing the type of a tree multiple times.</p>
+<h3><a href="#hints-and-inference-rules" id="hints-and-inference-rules">Hints and inference rules</a></h3>
+<p>Below are listed hints about the visit functions you have to implement, along with the inference rules of the alpine type system.</p>
+<h4><a href="#visitrecorde-astrecord" id="visitrecorde-astrecord"><code>visitRecord(e: ast.Record)</code></a></h4>
+<p>$$
+\frac{
+\Gamma \vdash e_1 : \tau_1 \quad \Gamma e_2 : \tau_  \Gamma \quad \dots \quad \Gamma e_n \quad \Gamma: \tau_n
+}{
+#a(a_1: e_1, a_2: e_2, \dots, a_n: e_n): #a(a_1: \tau_1, a_2: \tau_2, \dots, a_n :\tau_n)
+} \quad
+$$</p>
+<p>where $#a$ is the record name and $a_1$, …, $a_n$ are the labels.</p>
+<p>For each field of the record, you should visit recursively the expression of the field to get field types.</p>
+<h4><a href="#visitapplicatione-astapplication" id="visitapplicatione-astapplication"><code>visitApplication(e: ast.Application)</code></a></h4>
+<p>Two constraints should be addeed:</p>
+<ul>
+<li><code>Apply</code>: the application is valid.</li>
+<li><code>e</code>: should have the type $\tau$</li>
+</ul>
+<p>$$
+\frac{
+\Gamma \vdash f: ((l_1: \tau_1, l_2: \tau_2, \dots, l_n: \tau_n) \to \tau) \quad \Gamma e_1: \tau_1 \quad  \Gamma e_2: \tau_2 \quad \dots \quad \Gamma e_n: \tau_n
+}{
+\Gamma \vdash f(l_1: e_1, l_2: e_2, \dots, l_n: e_n): \tau
+}
+$$</p>
+<p>This means that if $f$ has type $(l_1: \tau_1, l_2: \tau_2, \dots, l_n: \tau_n) \to \tau$, and $e_1$ has type $\tau_1$, $e_2$ has type $\tau_2$, etc., then the application has type $\tau$.</p>
+<p>You should get the type of the function and of the labeled arguments. If the output type of the function is not known, you should generate a fresh type variable for it. Otherwise, $\tau$ is the output type of the function.</p>
+<h4><a href="#visitprefixapplication--visitinfixapplication" id="visitprefixapplication--visitinfixapplication"><code>visitPrefixApplication</code> / <code>visitInfixApplication</code></a></h4>
+<p>The idea is simlar to the <code>visitApplication</code> method. Keep in mind that infix and prefix applications do not have labels and their number of arguments is fixed (1 for prefix and 2 for infix).</p>
+<p>Prefix applications:</p>
+<p>$$
+\frac{
+\Gamma \vdash f: \tau_1 \to \tau  \quad \Gamma e: \tau_1
+}{
+\Gamma \vdash f(e): \tau
+}
+$$</p>
+<p>Infix applications:</p>
+<p>$$
+\frac{
+\Gamma \vdash f: (\tau_1, \tau_2) \to \tau, e_1: \tau_1, e_2: \tau_2
+}{
+\Gamma \vdash f(e_1, e_2): \tau
+}
+$$</p>
+<h4><a href="#visitconditionale-astconditional" id="visitconditionale-astconditional"><code>visitConditional(e: ast.Conditional)</code></a></h4>
+<div class="hint">
+<p>Check the <code>checkInstanceOf</code> function.</p>
+</div>
+<p>The type of a conditional is $\tau$ which is a supertype of the type of the <code>then</code> branch and the type of the <code>else</code> branch. The condition must be a <code>Boolean</code>. Generate fresh variables if needed.</p>
+<p>$$
+\frac{
+\Gamma \vdash e_1: \text{Boolean }, e_2: \tau_2, e_3: \tau_3, \tau &gt;: \tau_2, \tau &gt;: \tau_3
+}{
+\Gamma \vdash \text{if } e_1 \text{ then } e_2 \text{ else } e_3: \tau
+}
+$$</p>
+<h4><a href="#visitlete-astlet" id="visitlete-astlet"><code>visitLet(e: ast.Let)</code></a></h4>
+<p>$$
+\frac{
+\Gamma \vdash e: \tau, ,,\Gamma,x \mapsto e \vdash e_r: \tau_r
+}{
+\Gamma \vdash \text{let } x: \tau = e ,{ e_r }: \tau_r
+}
+$$</p>
+<p>You must assign a new scope name using the <code>assignScopeName</code> method, and visit the <code>binding</code> and the body with this new scope name.</p>
+<h4><a href="#visitlambdae-astlambda" id="visitlambdae-astlambda"><code>visitLambda(e: ast.Lambda)</code></a></h4>
+<p>You should assign a new scope name for that lambda and in that scope, you should get the type of the inputs (using <code>computedUncheckedInputTypes</code>)</p>
+<p>In the same manner as the application, get the output type of the lambda or generate a fresh variable, and add the following constraints:</p>
+<ul>
+<li><code>e</code> should be of type <code>Type.Arrow</code>.</li>
+<li>the body should be a subtype of the output type of the lambda.</li>
+</ul>
+<p>$$
+\frac{
+\Gamma x_1: \tau_1, \ldots, x_n: \tau_n \vdash e &lt;: \tau
+}{
+\Gamma : (l_1: x_1: \tau_1, \ldots, l_n: x_n: \tau_n) ,{\color{green} \to \tau} ,{ e } : ((l_1: \tau_1, \ldots, l_n: \tau_n) \to \tau)
+}
+$$</p>
+<p>where the first ${\color{green} \to \tau}$ is optional.</p>
+<h4><a href="#visitparenthesizedexpression" id="visitparenthesizedexpression"><code>visitParenthesizedExpression</code></a></h4>
+<p>$$
+\frac{\Gamma \vdash e : \tau}{\Gamma \vdash (e): \tau}
+$$</p>
+<h4><a href="#evaluatetypetree" id="evaluatetypetree"><code>evaluateTypeTree</code></a></h4>
+<p>When encoutering a specified type, you should call <code>evaluateTypeTree</code>.</p>
+<h4><a href="#visitascribedexpressione-astascribedexpression" id="visitascribedexpressione-astascribedexpression"><code>visitAscribedExpression(e: ast.AscribedExpression)</code></a></h4>
+<p>You should evaluate the <code>ascription</code> field of the <code>AscribedExpression</code> using <code>evaluateTypeTree</code> and depending on the ascription. Then add needed constraints, depending on the ascription sort:</p>
+<!-- * if it's a widening ascription, the expression type should be a subtype of the type given in the ascription.
+* if it's a narrowing unconditionally ascription, use `checkedTypeEnsuringConvertible` to check that the type of the expression is a subtype of the type given in the ascription, and return the type given in the ascription.
+* if it's a narrowing ascription, use `checkedTypeEnsuringConvertible` to check that the type of the expression is a subtype of the type given in the ascription, and return the optional type that corresponds to it. -->
+<p>$$
+\frac{\Gamma \vdash e &lt;: \tau}{\Gamma \vdash e , @ ,\tau : \tau}
+$$
+$$
+\frac{\Gamma \vdash e :&gt; \tau}{\Gamma \vdash e , @! ,\tau : \tau} \text{ while ensuring convertibility}
+$$
+$$
+\frac{\Gamma \vdash}{\Gamma \vdash e , @? ,\tau : \text{Option}[\tau]}
+$$</p>
+<h4><a href="#meta-types" id="meta-types">Meta-types</a></h4>
+<p>Metatypes are the types of types. For example, in an alpine program, the type <code>Int</code> in <code>let x : Int = 42 { ... }</code> has the type <code>MetaType[Int]</code>. This is useful to type check an expression where a type is expected, for example in a type ascription or arrow types.</p>
+<h4><a href="#visittypeidentifiere-asttypeidentifier" id="visittypeidentifiere-asttypeidentifier"><code>visitTypeIdentifier(e: ast.TypeIdentifier)</code></a></h4>
+<p>You should lookup the type identifier in the current scope:</p>
+<ol>
+<li>if there is no type with that name, return <code>Type.Error</code> and report an error.</li>
+<li>if there is a single type with that name, return the meta-type corresponding to the type (<code>Type.Meta</code>).</li>
+<li>if there is more than a single type with that name, return a <code>Type.Error</code> and report an ambiguous use of the type.</li>
+</ol>
+<div class="hint">
+<p>Check the provided functions.</p>
+</div>
+<h4><a href="#visitrecordtype" id="visitrecordtype"><code>visitRecordType</code></a></h4>
+<p>You should return the type of the record type, which is a <code>Type.Record</code> with proper fields.</p>
+<p>$$
+\frac{
+\Gamma \vdash \tau_1: \text{Meta}[\text{Labeled}] \quad \ldots \quad \Gamma \tau_n: \text{Meta}[\text{Labeled}] \quad \Gamma\tau_r: \text{Meta}[\tau_r]
+}{
+\Gamma \vdash #a(\tau_1, \ldots, \tau_n) \to \tau_r
+}
+$$</p>
+<p>Note that $\tau_1$, …, $\tau_n$ are labelled types.</p>
+<h4><a href="#visitarrow" id="visitarrow"><code>visitArrow</code></a></h4>
+<p>You should return the type of the arrow type, which is a <code>Type.Arrow</code> with proper inputs and output.</p>
+<p>$$
+\frac{
+\Gamma \vdash \tau_1: \text{Meta}[\text{Labeled}] \quad \ldots \quad \Gamma \tau_n: \text{Meta}[\text{Labeled}] \quad \Gamma\tau_r: \text{Meta}[\tau_r]
+}{
+\Gamma \vdash (\tau_1, \ldots, \tau_n) \to \tau_r
+}
+$$</p>
+<p>Note that $\tau_1$, …, $\tau_n$ are labelled types.</p>
+<h4><a href="#visitparenthesizedtype" id="visitparenthesizedtype"><code>visitParenthesizedType</code></a></h4>
+<p>$$
+\frac{
+\Gamma \vdash \tau: \text{Meta}[\tau_{in}]
+}{
+\Gamma \vdash (\tau) \to \text{Meta}[\tau_{in}]
+}
+$$</p>
+<h4><a href="#visitrecordpattern" id="visitrecordpattern"><code>visitRecordPattern</code></a></h4>
+<p>On the same principle as the <code>visitRecord</code> method and <code>visitValuePattern</code>, you should add a constraint for the type of the pattern.</p>
+<p>$$
+\frac{\Gamma \vdash}{
+\Gamma \vdash #a(l_1: p_1, \ldots, l_n: p_n): #a(l_1: \tau_1, \ldots, l_n: \tau_n)
+}
+$$</p>
+<p>where $#a$ is the record name and $l_1$, …, $l_n$ are the labels.</p>
+<h4><a href="#visitwildcard" id="visitwildcard"><code>visitWildcard</code></a></h4>
+<p>$$
+\frac{\Gamma \vdash}{
+\Gamma \vdash _ : \tau
+}
+$$</p>
+<h4><a href="#visitfunction" id="visitfunction"><code>visitFunction</code></a></h4>
+<p>$$
+\frac{
+\Gamma, x_1: \tau_1, \ldots, x_n: \tau_n \vdash e &lt;: \tau
+}{
+\Gamma \vdash (\text{fun } f(x_1: \tau_1, \ldots, x_n: \tau_n) \to \tau { e }) : (l_1: x_1: \tau_1, \ldots, l_n: x_n: \tau_n) \to \tau
+}
+$$</p>
+<p>You should get the unchecked type of the function and memoize it. You should then type check the body and it must be a subtype of the output type of the function.</p>
+<h4><a href="#visitsum" id="visitsum"><code>visitSum</code></a></h4>
+<p>The function is provided, but here is the inference rule:</p>
+<p>$$
+\frac{
+\Gamma \vdash e: \tau_i
+}{
+\Gamma \vdash e: \tau_1 | \tau_2 | \ldots | \tau_i | \dots | \tau_n
+}
+$$</p>
+<h4><a href="#visitselection" id="visitselection"><code>visitSelection</code></a></h4>
+<p>A selection can be performed on a record with an identifier or an integer. You should add a <code>Member</code> constraint.</p>
+<p>For the integer selector:</p>
+<p>$$
+\frac{
+\Gamma \vdash e: #a(l_1: \tau_1, \dots, l_n:\tau_n)
+}{
+\Gamma \vdash e.i: \tau_i
+}
+$$</p>
+<p>For the identifier selector:</p>
+<p>$$
+\frac{
+\Gamma \vdash e: #a(l_1: \tau_1, \dots, l_n:\tau_n)
+}{
+\Gamma \vdash e.l_i: \tau_i
+}</p>
+
+</main>
+</div>
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/scala.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/swift.min.js"></script>
+<script>hljs.highlightAll();</script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous" onload="renderMathInElement(document.body, {delimiters:[{left:'$$', right:'$$', display: true}, {left:'$', right:'$', display: false}]});"></script>
+</body>
+</html>

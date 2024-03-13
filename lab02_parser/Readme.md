@@ -147,7 +147,7 @@ Here is the available API to implement the parser:
 * `expect(construct: String, pred: Token => Boolean)`: same as `expect` but takes a construct to include in the error message.
 * `report`: reports an error while parsing.
 * `snapshot`: returns the current state of the parser
-* `restore` : restores the state of the parser from a backup returned by `backup`
+* `restore` : restores the state of the parser from a backup returned by `snapshot`
 
 ### New elements of the language
 
@@ -188,7 +188,7 @@ For reference, the grammar is provided inside the [`grammar.md`](./grammar.md)/[
 
 The parser is written in composing functions, that each parses a part of the grammar.
 
-For example, let's have a look at the `primarayExpression()` function. This function `peek` at the next token, and depending on its nature, calls the appropriate function to parse the corresponding producing rule of the grammar.
+For example, let's have a look at the `primaryExpression()` function. This function `peek` at the next token, and depending on its nature, calls the appropriate function to parse the corresponding producing rule of the grammar.
 
 <div class='snippet'>
 
@@ -264,7 +264,7 @@ If there is a whitespace, then it returns directly the operator (recall: it's an
 
 In the case where it is not an operator, it will parse the compound expression (so call the `compoundExpression()` function.)
 
-##### `ascribedExpression()`
+##### `ascribed()`
 
 An ascribed expression is a prefix expression followed by an optional type cast. It returns a `AscribedExpression` AST node if there is a type cast, otherwise just a prefix expression. You can use the `typecast` function.
 
@@ -295,7 +295,7 @@ In _Alpine_, a `Labeled[T]` can be:
 * `<value>`
 * `<label>: <value>`
 
-_Hint_: you may find the `backup` and `restore` methods useful.
+_Hint_: you may find the `snapshot` and `restore` methods useful.
 
 _Note_: as stated in the grammar, a `<label>` can be an `<identifier>` or a `<keyword>`.
 
@@ -463,12 +463,12 @@ It should parse both cases:
 and
 
 ```
-(<value parameter list>) -> [type] { <expression> }
+(<value parameter list>) [-> type] { <expression> }
 ```
 
-where `[type]` is optional.
+where `[-> type]` is optional.
 
-_Hint_: `backup` and `restore` may come handy.
+_Hint_: `snapshot` and `restore` may come handy.
 
 ##### Match expressions
 
