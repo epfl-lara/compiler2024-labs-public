@@ -251,6 +251,8 @@ where $\char"23 a$ is the record name and $a_1$, …, $a_n$ are the labels.
 
 For each field of the record, you should visit recursively the expression of the field to get field types.
 
+_Note_: Math mode can be buggy on GitHub Markdown if the above rule is not properly displayed. You can download the .html file and open it in your browser to see it properly! Or open the Markdown file inside your editor. All `\char"23` should be displayed as `#`.
+
 #### `visitApplication(e: ast.Application)`
 
 Two constraints should be addeed:
