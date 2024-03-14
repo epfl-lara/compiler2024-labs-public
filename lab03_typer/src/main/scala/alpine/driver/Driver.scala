@@ -21,3 +21,12 @@ def typeCheck(configuration: Configuration): TypedProgram =
   ds.throwOnError()
   ds.log()
   typedSyntax
+
+/** Interpret the input program with the given `configuration` and returns its exit status. */
+def interpret(configuration: Configuration): Int =
+  val typedSyntax = typeCheck(configuration)
+  val interpreter = evaluation.Interpreter(
+    typedSyntax,
+    configuration.standardOutput,
+    configuration.standardError)
+  interpreter.run()

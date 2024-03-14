@@ -92,7 +92,7 @@ final class Typer(
     assignScopeName(d)
     assignNameDeclared(d)
 
-    val t = context.inScope(d, { (inner) =>
+    val t: Type = context.inScope(d, { (inner) =>
       ???
     })
 

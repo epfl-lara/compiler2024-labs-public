@@ -37,7 +37,7 @@
 <body class="markdown-body">
 <div id="container">
 <main>
-<p class="updated">Last updated on <time datetime=2024-03-08T16:25:52>Friday, March 08, 2024</time></p>
+<p class="updated">Last updated on <time datetime=2024-03-11T13:48:40>Monday, March 11, 2024</time></p>
 <h1><a href="#lab-02---parser" id="lab-02---parser">Lab 02 - Parser</a></h1>
 <p>In this second lab, you will implement the parser for the Alpine compiler.</p>
 <h2><a href="#obtaining-the-lab-files" id="obtaining-the-lab-files">Obtaining the lab files</a></h2>
@@ -103,11 +103,12 @@
 <p>Let&rsquo;s recall the global idea of a simple compiler&rsquo;s pipeline:</p>
 <pre><code>Source code -&gt; Lexer -&gt; Parser -&gt; Type checking -&gt; Assembly generation
 </code></pre>
-<p>The lexer will generate a sequence of tokens from the source code. The parser will generate an AST from the sequence of tokens.</p>
-<p>Let consider an example:</p>
+<p>The lexer generates a sequence of tokens from the source code.
+The parser generates an AST from the sequence of tokens.</p>
+<p>For example, consider the following program:</p>
 <pre><code class="language-swift">let main = exit(1)
 </code></pre>
-<p>The lexer will generate the following sequence of tokens:</p>
+<p>The lexer generates the following sequence of tokens:</p>
 <pre><code class="language-scala">List(
   Let(0: 3), // let
   Identifier(4: 8), // main
@@ -118,8 +119,9 @@
   RParen(17: 18) // )
 )
 </code></pre>
-<p><code>Let</code>, <code>Identifier</code>, <code>Eq</code>, <code>LParen</code>, <code>Integer</code>, <code>RParen</code> are tokens. The first element of each tuple is the position of the token in the source code.</p>
-<p>The parser will generate the following AST:</p>
+<p><code>Let</code>, <code>Identifier</code>, <code>Eq</code>, <code>LParen</code>, <code>Integer</code>, <code>RParen</code> are tokens.
+The number in parentheses denote the positions in the source text from which the token has been parsed, as 0-based indices in an array of code points.</p>
+<p>Given this token stream, the parser generates the following AST:</p>
 <pre><code class="language-scala">List(
   Binding(
     main, // identifier
@@ -143,9 +145,9 @@
 </code></pre>
 <p>The AST is more expressive than the sequence of tokens as it represents the structure of the source code.</p>
 <h2><a href="#general-structure-of-the-parser-and-the-codebase" id="general-structure-of-the-parser-and-the-codebase">General structure of the parser and the codebase</a></h2>
-<p>The parser consummes a sequence of tokens as a stream to produce an AST.</p>
-<p>The parsing is composed of multiple functions. Each function is responsible for parsing a specific part of the grammar. For example, the <code>binding</code> function is responsible for parsing a binding.</p>
-<p>Here is the available API to implement the parser:</p>
+<p>Parsing is decomposed into multiple functions, each of them responsible for parsing a specific part of the grammar.
+For example, the method <code>binding</code> is responsible for parsing binding trees, like the one shown in the previous section.
+All of these parsing functions use the following core API:</p>
 <ul>
 <li><code>peek</code>: looks at the next token without consuming it.
 <ul>
@@ -169,6 +171,8 @@
 <li><code>snapshot</code>: returns the current state of the parser</li>
 <li><code>restore</code> : restores the state of the parser from a backup returned by <code>snapshot</code></li>
 </ul>
+<p>Observer how these methods are used in the parts of the code that have been provided to get a sense of how they can be used.
+In particular, pay attention to the way <code>peek</code> and <code>take</code> (and its variants) are used.</p>
 <h3><a href="#new-elements-of-the-language" id="new-elements-of-the-language">New elements of the language</a></h3>
 <p>Throughout the lab, we will see new elements of the language.</p>
 <h4><a href="#types" id="types">Types</a></h4>

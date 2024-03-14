@@ -77,15 +77,16 @@ Let's recall the global idea of a simple compiler's pipeline:
 Source code -> Lexer -> Parser -> Type checking -> Assembly generation
 ```
 
-The lexer will generate a sequence of tokens from the source code. The parser will generate an AST from the sequence of tokens.
+The lexer generates a sequence of tokens from the source code.
+The parser generates an AST from the sequence of tokens.
 
-Let consider an example:
+For example, consider the following program:
 
 ```swift
 let main = exit(1)
 ```
 
-The lexer will generate the following sequence of tokens:
+The lexer generates the following sequence of tokens:
 
 ```scala
 List(
@@ -99,9 +100,10 @@ List(
 )
 ```
 
-`Let`, `Identifier`, `Eq`, `LParen`, `Integer`, `RParen` are tokens. The first element of each tuple is the position of the token in the source code.
+`Let`, `Identifier`, `Eq`, `LParen`, `Integer`, `RParen` are tokens.
+The number in parentheses denote the positions in the source text from which the token has been parsed, as 0-based indices in an array of code points.
 
-The parser will generate the following AST:
+Given this token stream, the parser generates the following AST:
 
 ```scala
 List(
@@ -130,11 +132,9 @@ The AST is more expressive than the sequence of tokens as it represents the stru
 
 ## General structure of the parser and the codebase
 
-The parser consummes a sequence of tokens as a stream to produce an AST.
-
-The parsing is composed of multiple functions. Each function is responsible for parsing a specific part of the grammar. For example, the `binding` function is responsible for parsing a binding.
-
-Here is the available API to implement the parser:
+Parsing is decomposed into multiple functions, each of them responsible for parsing a specific part of the grammar.
+For example, the method `binding` is responsible for parsing binding trees, like the one shown in the previous section.
+All of these parsing functions use the following core API:
 
 * `peek`: looks at the next token without consuming it.
   * it returns either `Some(token)` or `None` if the stream is empty (i.e. we reach an EOF).
@@ -148,6 +148,9 @@ Here is the available API to implement the parser:
 * `report`: reports an error while parsing.
 * `snapshot`: returns the current state of the parser
 * `restore` : restores the state of the parser from a backup returned by `snapshot`
+
+Observer how these methods are used in the parts of the code that have been provided to get a sense of how they can be used.
+In particular, pay attention to the way `peek` and `take` (and its variants) are used.
 
 ### New elements of the language
 
