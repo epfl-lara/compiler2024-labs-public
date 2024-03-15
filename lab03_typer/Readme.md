@@ -310,7 +310,7 @@ The type of a conditional is $\tau$ which is a supertype of the type of the `the
 
 $$
 \frac{
-  \Gamma \vdash e_1: \text{Boolean }, e_2: \tau_2, e_3: \tau_3, \tau >: \tau_2, \tau >: \tau_3
+  \Gamma \vdash e_1: \text{Boolean } \quad \Gamma \vdash e_2: \tau_2 \quad \Gamma \vdash  e_3: \tau_3 \quad \Gamma \vdash  \tau >: \tau_2 \quad \Gamma \vdash  \tau >: \tau_3
 }{
   \Gamma \vdash \text{if } e_1 \text{ then } e_2 \text{ else } e_3: \tau
 }
