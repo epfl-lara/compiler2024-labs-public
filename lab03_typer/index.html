@@ -37,7 +37,7 @@
 <body class="markdown-body">
 <div id="container">
 <main>
-<p class="updated">Last updated on <time datetime=2024-03-13T14:36:53>Wednesday, March 13, 2024</time></p>
+<p class="updated">Last updated on <time datetime=2024-03-15T14:13:02>Friday, March 15, 2024</time></p>
 <h1><a href="#lab-03---typer" id="lab-03---typer">Lab 03 - Typer</a></h1>
 <p>In this third, you will implement the typer for the Alpine compiler.</p>
 <h2><a href="#obtaining-the-lab-files" id="obtaining-the-lab-files">Obtaining the lab files</a></h2>
@@ -112,7 +112,7 @@
 <li>It also perform “name resolution”: every variable and function call should be resolved to a unique definition (this is the <code>referredEntity</code> field from the interpreter lab.) For example, if the program contains two function definitions <code>fun f(x: Int) -&gt; Int { ... }</code> and <code>fun f(x: Float) -&gt; Float { ... }</code>, then the call <code>f(42)</code> should be resolved to one of the two definitions. The choice of the definition depends on the type of the argument <code>42</code>.</li>
 </ul>
 <h3><a href="#supported-language-features" id="supported-language-features">Supported language features</a></h3>
-<p>The type checker supports all the features described in the language description (i.e., in this <a href="&quot;language_desc.md&quot;">file</a>), EXCEPT the <em><strong>Type declarations</strong></em>. This means, your typer does not have to handle the constructs of the form</p>
+<p>The type checker supports all the features described in the language description (i.e., in this <a href="language_desc.md">file</a>), EXCEPT the <em><strong>Type declarations</strong></em>. This means, your typer does not have to handle the constructs of the form</p>
 <pre><code class="language-swift">type T = Int
 type ListInt = #nil | #cons(head: Int, tail: ListInt)
 </code></pre>

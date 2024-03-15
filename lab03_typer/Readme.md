@@ -87,7 +87,7 @@ During this lab, you will implement the type checking phase of the Alpine compil
 
 ### Supported language features
 
-The type checker supports all the features described in the language description (i.e., in this [file]("language_desc.md")), EXCEPT the ***Type declarations***. This means, your typer does not have to handle the constructs of the form
+The type checker supports all the features described in the language description (i.e., in this [file](language_desc.md)), EXCEPT the ***Type declarations***. This means, your typer does not have to handle the constructs of the form
 
 ```swift
 type T = Int
