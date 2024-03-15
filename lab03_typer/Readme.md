@@ -383,7 +383,7 @@ Metatypes are the types of types. For example, in an alpine program, the type `I
 You should lookup the type identifier in the current scope:
 
 1. if there is no type with that name, return `Type.Error` and report an error.
-2. if there is a single type with that name, return the meta-type corresponding to the type (`Type.Meta`).
+2. if there is a single type with that name, return the type corresponding to the meta-type (`Type.Meta`).
 3. if there is more than a single type with that name, return a `Type.Error` and report an ambiguous use of the type.
 
 <div class="hint">
