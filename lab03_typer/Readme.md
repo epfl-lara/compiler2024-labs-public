@@ -28,6 +28,8 @@ Then take your current `alpine` project, i.e., where you implemented the interpr
 * copy the new test files by copying the `test/typing` directory from this week (either from zip or repo) into your `alpine` project at this place: `src/test/scala/alpine/typing`
 * move the interpreter tests from `archive/test/evaluation` back to`src/test/scala/alpine/evaluation`.
 
+_Note:_ the `InterpreterTests.scala` contain an old behavior that is not relevant anymore. You can either delete it or pull the new changes from the repository.
+
 Your project directory structure should look like something like this:
 
 ```console

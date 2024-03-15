@@ -567,7 +567,7 @@ class InterpreterTests extends munit.FunSuite:
   test("lambda (3pts)") {
     val input = SourceFile(
       "test",
-      """let f = let y = 1 { (x: Int) { x + y } }
+      """let f = let y = 1 { (_ x: Int) { x + y } }
         |let main = exit(f(x: 0))""".stripMargin)
     val Result(s, o) = interpret(input)
     assertEquals(s, 1)
