@@ -28,8 +28,6 @@ Then take your current `alpine` project, i.e., where you implemented the interpr
 * copy the new test files by copying the `test/typing` directory from this week (either from zip or repo) into your `alpine` project at this place: `src/test/scala/alpine/typing`
 * move the interpreter tests from `archive/test/evaluation` back to`src/test/scala/alpine/evaluation`.
 
-_Note:_ the `InterpreterTests.scala` contain an old behavior that is not relevant anymore. You can either delete it or pull the new changes from the repository.
-
 Your project directory structure should look like something like this:
 
 ```console
@@ -89,7 +87,7 @@ During this lab, you will implement the type checking phase of the Alpine compil
 
 ### Supported language features
 
-The type checker supports all the features described in the language description (i.e., in this [file](language_desc.md)), EXCEPT the ***Type declarations***. This means, your typer does not have to handle the constructs of the form
+The type checker supports all the features described in the language description (i.e., in this [file]("language_desc.md")), EXCEPT the ***Type declarations***. This means, your typer does not have to handle the constructs of the form
 
 ```swift
 type T = Int
@@ -244,7 +242,7 @@ Below are listed hints about the visit functions you have to implement, along wi
 #### `visitRecord(e: ast.Record)`
 
 $$\frac{
-  \Gamma \vdash e_1 : \tau_1 \quad \Gamma e_2 : \tau_  \Gamma \quad \dots \quad \Gamma e_n \quad \Gamma: \tau_n
+  \Gamma \vdash e_1 : \tau_1 \quad \Gamma e_2 : \tau_2 \quad \dots \quad \Gamma \vdash e_n : \tau_n
 }{
   \char"23 a(a_1: e_1, a_2: e_2, \dots, a_n: e_n): \char"23 a(a_1: \tau_1, a_2: \tau_2, \dots, a_n :\tau_n)
 }$$
@@ -310,7 +308,7 @@ The type of a conditional is $\tau$ which is a supertype of the type of the `the
 
 $$
 \frac{
-  \Gamma \vdash e_1: \text{Boolean } \quad \Gamma \vdash e_2: \tau_2 \quad \Gamma \vdash  e_3: \tau_3 \quad \Gamma \vdash  \tau >: \tau_2 \quad \Gamma \vdash  \tau >: \tau_3
+  \Gamma \vdash e_1: \text{Boolean }, e_2: \tau_2, e_3: \tau_3, \tau >: \tau_2, \tau >: \tau_3
 }{
   \Gamma \vdash \text{if } e_1 \text{ then } e_2 \text{ else } e_3: \tau
 }
@@ -385,7 +383,7 @@ Metatypes are the types of types. For example, in an alpine program, the type `I
 You should lookup the type identifier in the current scope:
 
 1. if there is no type with that name, return `Type.Error` and report an error.
-2. if there is a single type with that name, return the type corresponding to the meta-type (`Type.Meta`).
+2. if there is a single type with that name, return the meta-type corresponding to the type (`Type.Meta`).
 3. if there is more than a single type with that name, return a `Type.Error` and report an ambiguous use of the type.
 
 <div class="hint">

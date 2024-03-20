@@ -37,7 +37,7 @@
 <body class="markdown-body">
 <div id="container">
 <main>
-<p class="updated">Last updated on <time datetime=2024-03-15T16:51:31>Friday, March 15, 2024</time></p>
+<p class="updated">Last updated on <time datetime=2024-03-13T14:36:53>Wednesday, March 13, 2024</time></p>
 <h1><a href="#lab-03---typer" id="lab-03---typer">Lab 03 - Typer</a></h1>
 <p>In this third, you will implement the typer for the Alpine compiler.</p>
 <h2><a href="#obtaining-the-lab-files" id="obtaining-the-lab-files">Obtaining the lab files</a></h2>
@@ -63,7 +63,6 @@
 <li>copy the new test files by copying the <code>test/typing</code> directory from this week (either from zip or repo) into your <code>alpine</code> project at this place: <code>src/test/scala/alpine/typing</code></li>
 <li>move the interpreter tests from <code>archive/test/evaluation</code> back to<code>src/test/scala/alpine/evaluation</code>.</li>
 </ul>
-<p><em>Note:</em> the <code>InterpreterTests.scala</code> contain an old behavior that is not relevant anymore. You can either delete it or pull the new changes from the repository.</p>
 <p>Your project directory structure should look like something like this:</p>
 <pre><code class="language-console">alpine/
 ├── archive/                                 &lt;----- YOU CAN DELETE THIS DIRECTORY
@@ -113,7 +112,7 @@
 <li>It also perform “name resolution”: every variable and function call should be resolved to a unique definition (this is the <code>referredEntity</code> field from the interpreter lab.) For example, if the program contains two function definitions <code>fun f(x: Int) -&gt; Int { ... }</code> and <code>fun f(x: Float) -&gt; Float { ... }</code>, then the call <code>f(42)</code> should be resolved to one of the two definitions. The choice of the definition depends on the type of the argument <code>42</code>.</li>
 </ul>
 <h3><a href="#supported-language-features" id="supported-language-features">Supported language features</a></h3>
-<p>The type checker supports all the features described in the language description (i.e., in this <a href="language_desc.md">file</a>), EXCEPT the <em><strong>Type declarations</strong></em>. This means, your typer does not have to handle the constructs of the form</p>
+<p>The type checker supports all the features described in the language description (i.e., in this <a href="&quot;language_desc.md&quot;">file</a>), EXCEPT the <em><strong>Type declarations</strong></em>. This means, your typer does not have to handle the constructs of the form</p>
 <pre><code class="language-swift">type T = Int
 type ListInt = #nil | #cons(head: Int, tail: ListInt)
 </code></pre>
@@ -220,7 +219,7 @@ fun f(x: Float) -&gt; Float { x }
 <p>Below are listed hints about the visit functions you have to implement, along with the inference rules of the alpine type system.</p>
 <h4><a href="#visitrecorde-astrecord" id="visitrecorde-astrecord"><code>visitRecord(e: ast.Record)</code></a></h4>
 <p>$$\frac{
-\Gamma \vdash e_1 : \tau_1 \quad \Gamma e_2 : \tau_  \Gamma \quad \dots \quad \Gamma e_n \quad \Gamma: \tau_n
+\Gamma \vdash e_1 : \tau_1 \quad \Gamma e_2 : \tau_2 \quad \dots \quad \Gamma \vdash e_n : \tau_n
 }{
 \char&quot;23 a(a_1: e_1, a_2: e_2, \dots, a_n: e_n): \char&quot;23 a(a_1: \tau_1, a_2: \tau_2, \dots, a_n :\tau_n)
 }$$</p>
@@ -267,7 +266,7 @@ $$</p>
 <p>The type of a conditional is $\tau$ which is a supertype of the type of the <code>then</code> branch and the type of the <code>else</code> branch. The condition must be a <code>Boolean</code>. Generate fresh variables if needed.</p>
 <p>$$
 \frac{
-\Gamma \vdash e_1: \text{Boolean } \quad \Gamma \vdash e_2: \tau_2 \quad \Gamma \vdash  e_3: \tau_3 \quad \Gamma \vdash  \tau &gt;: \tau_2 \quad \Gamma \vdash  \tau &gt;: \tau_3
+\Gamma \vdash e_1: \text{Boolean }, e_2: \tau_2, e_3: \tau_3, \tau &gt;: \tau_2, \tau &gt;: \tau_3
 }{
 \Gamma \vdash \text{if } e_1 \text{ then } e_2 \text{ else } e_3: \tau
 }
@@ -322,7 +321,7 @@ $$</p>
 <p>You should lookup the type identifier in the current scope:</p>
 <ol>
 <li>if there is no type with that name, return <code>Type.Error</code> and report an error.</li>
-<li>if there is a single type with that name, return the type corresponding to the meta-type (<code>Type.Meta</code>).</li>
+<li>if there is a single type with that name, return the meta-type corresponding to the type (<code>Type.Meta</code>).</li>
 <li>if there is more than a single type with that name, return a <code>Type.Error</code> and report an ambiguous use of the type.</li>
 </ol>
 <div class="hint">
