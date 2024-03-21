@@ -37,7 +37,7 @@
 <body class="markdown-body">
 <div id="container">
 <main>
-<p class="updated">Last updated on <time datetime=2024-03-13T14:36:53>Wednesday, March 13, 2024</time></p>
+<p class="updated">Last updated on <time datetime=2024-03-21T11:50:17>Thursday, March 21, 2024</time></p>
 <h1><a href="#lab-03---typer" id="lab-03---typer">Lab 03 - Typer</a></h1>
 <p>In this third, you will implement the typer for the Alpine compiler.</p>
 <h2><a href="#obtaining-the-lab-files" id="obtaining-the-lab-files">Obtaining the lab files</a></h2>
@@ -271,6 +271,7 @@ $$</p>
 \Gamma \vdash \text{if } e_1 \text{ then } e_2 \text{ else } e_3: \tau
 }
 $$</p>
+<p><em>Note</em>: you should consider the trivial case as well. If the two branches have the same type, then there is no need for a fresh variable.</p>
 <h4><a href="#visitlete-astlet" id="visitlete-astlet"><code>visitLet(e: ast.Let)</code></a></h4>
 <p>$$
 \frac{

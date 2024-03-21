@@ -314,6 +314,8 @@ $$
 }
 $$
 
+_Note_: you should consider the trivial case as well. If the two branches have the same type, then there is no need for a fresh variable.
+
 #### `visitLet(e: ast.Let)`
 
 
