@@ -494,8 +494,8 @@ class InterpreterTests extends munit.FunSuite:
   test("overloading (3pts)") {
     val input = SourceFile(
       "test",
-      """fun f(x: #a) { print(#fst(x)) }
-        |fun f(x: #b) { print(#snd(x)) }
+      """fun f(_ x: #a) { print(#fst(x)) }
+        |fun f(_ x: #b) { print(#snd(x)) }
         |let main = f(x: #b)""".stripMargin)
     val Result(s, o) = interpret(input)
     assertEquals(s, 0)
