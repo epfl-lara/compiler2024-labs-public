@@ -56,16 +56,16 @@ alpine/
 │   │   │   │   ├── util/                    
 │   │   │   │   │   ├── ...
 │   │   │   ├── Main.scala                   <----- COPY FROM THIS WEEK FILES (replace the current one)
-├── test/
-│   ├── scala/
-│   │   ├── alpine/
-│   │   │   ├── evaluation/                  <----- MOVE BACK FROM ARCHIVE
-│   │   │   │   ├── InterpreterTest.scala
-│   │   │   ├── parsing/                     
-│   │   │   │   ├── ...
-│   │   │   ├── typing/                       <----- COPY FROM THIS WEEK FILES
-│   │   │   │   ├── TyperTest.scala
-│   │   │   ├── util/                        
+│   ├── test/
+│   │   ├── scala/
+│   │   │   ├── alpine/
+│   │   │   │   ├── evaluation/                  <----- MOVE BACK FROM ARCHIVE
+│   │   │   │   │   ├── InterpreterTest.scala
+│   │   │   │   ├── parsing/                     
+│   │   │   │   │   ├── ...
+│   │   │   │   ├── typing/                       <----- COPY FROM THIS WEEK FILES
+│   │   │   │   │   ├── TyperTest.scala
+│   │   │   │   ├── util/                        
 ```
 
 
