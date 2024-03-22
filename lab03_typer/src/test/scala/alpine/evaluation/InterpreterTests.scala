@@ -496,7 +496,7 @@ class InterpreterTests extends munit.FunSuite:
       "test",
       """fun f(_ x: #a) { print(#fst(x)) }
         |fun f(_ x: #b) { print(#snd(x)) }
-        |let main = f(x: #b)""".stripMargin)
+        |let main = f(#b)""".stripMargin)
     val Result(s, o) = interpret(input)
     assertEquals(s, 0)
     assertEquals(o, "#snd(#b)")
@@ -568,7 +568,7 @@ class InterpreterTests extends munit.FunSuite:
     val input = SourceFile(
       "test",
       """let f = let y = 1 { (_ x: Int) { x + y } }
-        |let main = exit(f(x: 0))""".stripMargin)
+        |let main = exit(f(0))""".stripMargin)
     val Result(s, o) = interpret(input)
     assertEquals(s, 1)
   }

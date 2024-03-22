@@ -30,6 +30,8 @@ Then take your current `alpine` project, i.e., where you implemented the interpr
 
 _Note:_ the `InterpreterTests.scala` contain an old behavior that is not relevant anymore. You can either delete it or pull the new changes from the repository.
 
+_Edit:_ Please copy the `symbols/Types.scala` from the latest version on the repo. The old labs contain an outdated version of this file.
+
 Your project directory structure should look like something like this:
 
 ```console
