@@ -466,7 +466,7 @@ $$
 }
 $$
 
-You should get the unchecked type of the function and memoize it. You should then type check the body and it must be a subtype of the output type of the function.
+You should get the unchecked type of the function and memoize it. You should then type check the body and it must be a subtype of the output type of the function using `checkInstanceOf`.
 
 #### `visitSum`
 

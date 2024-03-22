@@ -37,7 +37,7 @@
 <body class="markdown-body">
 <div id="container">
 <main>
-<p class="updated">Last updated on <time datetime=2024-03-22T16:48:45>Friday, March 22, 2024</time></p>
+<p class="updated">Last updated on <time datetime=2024-03-22T17:39:27>Friday, March 22, 2024</time></p>
 <h1><a href="#lab-03---typer" id="lab-03---typer">Lab 03 - Typer</a></h1>
 <p>In this third, you will implement the typer for the Alpine compiler.</p>
 <h2><a href="#obtaining-the-lab-files" id="obtaining-the-lab-files">Obtaining the lab files</a></h2>
@@ -380,7 +380,7 @@ $$</p>
 \Gamma \vdash (\text{fun } f(x_1: \tau_1, \ldots, x_n: \tau_n) \to \tau { e }) : (l_1: x_1: \tau_1, \ldots, l_n: x_n: \tau_n) \to \tau
 }
 $$</p>
-<p>You should get the unchecked type of the function and memoize it. You should then type check the body and it must be a subtype of the output type of the function.</p>
+<p>You should get the unchecked type of the function and memoize it. You should then type check the body and it must be a subtype of the output type of the function using <code>checkInstanceOf</code>.</p>
 <h4><a href="#visitsum" id="visitsum"><code>visitSum</code></a></h4>
 <p>The function is provided, but here is the inference rule:</p>
 <p>$$
