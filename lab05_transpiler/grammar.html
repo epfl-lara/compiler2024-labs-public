@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Transpiler</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github.min.css" media="screen" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github-dark.min.css" media="screen and (prefers-color-scheme: dark)" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.5.1/github-markdown.min.css">
+  <style>
+	.markdown-body {
+		box-sizing: border-box;
+		min-width: 200px;
+		max-width: 980px;
+		margin: 0 auto;
+		padding: 45px;
+	}
+
+	@media (max-width: 767px) {
+		.markdown-body {
+			padding: 15px;
+		}
+	}
+
+  .snippet pre {
+    margin-bottom: .1em;
+  }
+
+  .snippet-path {
+    font-size: 0.8em;
+    font-style: italic;
+    text-align: right;
+  }
+  </style>
+</head>
+<body class="markdown-body">
+<div id="container">
+<main>
+<p class="updated">Last updated on <time datetime=2024-03-28T17:37:31>Thursday, March 28, 2024</time></p>
+<h1><a href="#alpine-grammar" id="alpine-grammar">Alpine grammar</a></h1>
+<h2><a href="#notation" id="notation">Notation</a></h2>
+<ul>
+<li><code>list(X)</code> denotes a list of <code>X</code> elements, possibly empty, separated by <code>,</code>. For example. <code>IntegerList -&gt; list(Integer)</code> represents lists like <code>1 , 2 , 3</code>, <code></code>, or <code>1</code>.</li>
+<li><code>[ X ]</code> denotes an optional <code>X</code>. For example, <code>['+']</code> represents <code>+</code> or nothing.</li>
+<li><code>X1 | X2 | …</code> denotes a choice between the elements <code>X1</code>, <code>X2</code>, …. For example, <code>('+' | '-')</code> represents <code>+</code> or <code>-</code>.</li>
+</ul>
+<h2><a href="#grammar" id="grammar">Grammar</a></h2>
+<pre><code class="language-grammar">Program -&gt; list(Declaration)
+Declaration -&gt; Binding | Function | TypeDeclaration
+
+Binding -&gt; 'let' Identifier [':' Type] '=' Expression
+LetExpression -&gt; Binding '{' Expression '}'
+
+Function -&gt; 'fun' FunctionIdentifier '(' [ValueParameterList] ')' ['-&gt;' Type] '{' Expression '}'
+TypeDeclaration -&gt; 'type' Identifier '=' Type
+
+FunctionIdentifier -&gt; Identifier | InfixOp
+ValueParameterList -&gt; list(ValueParameter)
+ValueParameterLabel -&gt; Label | '_'
+ValueParameterId -&gt; Identifier | '_'
+ValueParameter -&gt; [ValueParameterLabel] ValueParameterId [':' Type]
+
+
+Expression -&gt; InfixExpression
+InfixExpression -&gt; Ascribed higherPrecedence(InfixOp InfixExpression)
+Ascribed -&gt; PrefixExpression [('@' | '@!' | '@?')  Type]
+
+// The choice between 1st and 2nd here depends on whether there is a whitespace after the operator (2) or not (1) 
+PrefixExpression -&gt; InfixOp | InfixOp CompoundExpression | CompoundExpression
+
+CompoundExpression -&gt; PrimaryExpression CompoundExpression2
+CompoundExpression2 -&gt; ε |  ['.' Integer  | '.' Identifier  | '.' InfixOp  | '(' LabeledExpressionList ')'] CompoundExpression2
+
+PrimaryExpression -&gt; Identifier | Literal | Record | IfExpression | MatchExpression | LetExpression | '(' Expression ')' | LambdaDef
+
+LambdaDef -&gt; '(' ValueParameterList ')' ['-&gt;' Type] '{' Expression '}'
+
+Literal -&gt; IntegerLiteral | FloatLiteral | StringLiteral | BooleanLiteral
+
+Record -&gt; '#' Identifier  ['(' LabeledExpressionList ')']
+LabeledExpressionList -&gt; list(LabeledExpression)
+LabelExpression -&gt; [Label ':'] Expression
+Label -&gt; Identifier | Keyword
+
+RecordType -&gt; '#' Identifier [ '(' list(LabeledType) ')' ]
+LabeledType -&gt; [Identifier ':'] Type
+
+IfExpression -&gt; 'if' Expression 'then' Expression 'else' Expression
+
+MatchExpression -&gt; 'match' Expression MatchBody
+MatchBody -&gt; '{' CaseList '}'
+CaseList -&gt; list(Case)
+Case -&gt; 'case' Pattern 'then' Expression
+Pattern -&gt; '_' | RecordPattern | BindingPattern | ValuePattern
+RecordPattern -&gt; '#' Identifier [ '(' list(RecordPatternField) ')' ]
+RecordPatternField -&gt; Pattern
+BindingPattern -&gt; 'let' Identifier [':' Type]
+ValuePattern -&gt; Expression
+
+
+Type -&gt; SumType
+SumType -&gt; PrimaryType ['|' PrimaryType]
+PrimaryType -&gt; TypeIdentifier | '(' Type ')' | RecordType
+
+Identifier -&gt; IdentifierToken
+IntegerLiteral -&gt; IntegerToken
+FloatLiteral -&gt; FloatToken
+StringLiteral -&gt; StringToken
+BooleanLiteral -&gt; 'true' | 'false'
+
+InfixOp -&gt; '|| ' | '&amp;&amp;' | '&lt;' | '&lt;=' | '&gt;' | '&gt;=' | '==' | '!=' | '...' | '..&lt;' | '+' | '-' | '| ' | '^' | '*' | '/' | '%' | '&amp;' | '&lt;&lt;' | '&gt;&gt;' | '~' | '!'
+</code></pre>
+
+</main>
+</div>
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/scala.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/swift.min.js"></script>
+<script>hljs.highlightAll();</script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous" onload="renderMathInElement(document.body, {delimiters:[{left:'$$', right:'$$', display: true}, {left:'$', right:'$', display: false}]});"></script>
+</body>
+</html>

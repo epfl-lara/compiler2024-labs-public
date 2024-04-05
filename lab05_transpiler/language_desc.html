@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Transpiler</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github.min.css" media="screen" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github-dark.min.css" media="screen and (prefers-color-scheme: dark)" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.5.1/github-markdown.min.css">
+  <style>
+	.markdown-body {
+		box-sizing: border-box;
+		min-width: 200px;
+		max-width: 980px;
+		margin: 0 auto;
+		padding: 45px;
+	}
+
+	@media (max-width: 767px) {
+		.markdown-body {
+			padding: 15px;
+		}
+	}
+
+  .snippet pre {
+    margin-bottom: .1em;
+  }
+
+  .snippet-path {
+    font-size: 0.8em;
+    font-style: italic;
+    text-align: right;
+  }
+  </style>
+</head>
+<body class="markdown-body">
+<div id="container">
+<main>
+<p class="updated">Last updated on <time datetime=2024-03-28T17:37:31>Thursday, March 28, 2024</time></p>
+<h1><a href="#alpine" id="alpine">Alpine</a></h1>
+<p>Alpine is a small functional programming language that emphaizes recusrsive programming on closed and open unions of product types (aka record types). Programs are statically type checked and can be ran by an interpreter or compiled to WebAssembly.</p>
+<h3><a href="#language-tour" id="language-tour">Language tour</a></h3>
+<p>As the tradition says that the first example of a programming language should be &ldquo;Hello, World!&rdquo;.
+Let&rsquo;s oblige:</p>
+<pre><code>let main = print(&quot;Hello, World!&quot;)
+</code></pre>
+<p>The rest of this section looks at more insteresting features.</p>
+<h4><a href="#records" id="records">Records</a></h4>
+<p>A record is an aggregate of possibly heterogeneous data types.
+In Alpine, a record also has a name.
+For example, the following statement introduces a constant <code>x</code> with the value <code>#pair(1, 2)</code>, which denotes a record named <code>#pair</code> having two integer fields assigned to <code>1</code> and <code>2</code>, respectively.</p>
+<pre><code>let x = #pair(1, 2)
+</code></pre>
+<p>The number of fields of a record is called its <em>arity</em>.
+In Alpine, a record can have any number of fields but its arity is fixed.
+A record with arity 0 is called a singleton.</p>
+<p>The fields of a record may be labeled.
+One may also mix labeled and non-labeled records (see pattern matching).</p>
+<pre><code>let u = #number(42, endianness: #little)
+</code></pre>
+<p>The type of a record describes its shape (i.e., its name, arity, and field labels) along with the types of its fields.
+For example, the type of <code>#number(42, endianness: #little)</code> is <code>#number(Int, endianness: #little)</code>.</p>
+<p><em>Note: The meaning of an expression <code>#x</code> depends on the context in which it occurs.</em>
+<em>In a term position, it denotes a singleton but in a type position it denotes the <strong>type</strong> of a singleton.</em></p>
+<p>The value of a record field can be selected using either its label or its index.
+For example:</p>
+<pre><code>fun scale(
+  _ p: #vector2(x: Float, y: Float), by f: Float
+) -&gt; #vector2(x: Float, y: Float) {
+  #vector2(x: f * p.x, y: f * p.1)
+}
+
+let main = print(scale(#vector2(x: 1.3, y: 2.1), by: 2.0))
+// Prints &quot;#vector2(x: 2.6, y: 2.2)&quot;
+</code></pre>
+<h4><a href="#open-unions" id="open-unions">Open unions</a></h4>
+<p>The types of Alpine form a lattice whose top and bottom are called <code>Any</code> and <code>Never</code>, respectively.
+This lattice represent the subtyping relation of the language, meaning that all data types are subtype of <code>Any</code>.
+This property can be used to express <em>open</em> unions of data types.</p>
+<pre><code>fun duplicate(_ x: Any) -&gt; #pair(Any, Any) { #pair(x, x) }
+let main = print(duplicate(#unit))
+// Prints &quot;#pair(#unit, #unit)&quot;
+</code></pre>
+<p>Using <code>Any</code> loses static type information trough erasure.
+There are two ways to recover it.
+The first is to <em>downcast</em> a value to a narrower type.</p>
+<pre><code>let x: Any = 40
+let main = print((x @! Int) + 2)
+// Prints &quot;42&quot;
+</code></pre>
+<p>Note that downcasting is a dangerous operation!
+It is essentially an assertion that the compiler can&rsquo;t guarantee.
+At run-time, the operation is defined if and only if the target of the cast is indeed the type of the value being converted.
+Otherwise, it crashes the program.
+Safer downcasting can be expressed using pattern matching, which is the second approach to narrowing.</p>
+<p>The compile is typically able to widen the type of an expression as necessary.
+For example, calling <code>duplicate(42)</code> widens <code>Int</code> to <code>Any</code> automatically.
+Nonetheless, it may be desirable to use explicit widening in some situations.</p>
+<pre><code>let x = 42 @ Any // `x` has type `Any`
+</code></pre>
+<h4><a href="#closed-unions" id="closed-unions">Closed unions</a></h4>
+<p>A closed union is a finite set of types.
+It is expressed using the <code>|</code> operator between type expressions:</p>
+<pre><code>let x: #a | #b = #a
+</code></pre>
+<p>In Alpine, closed unions can only be formed over record types with different shapes.
+For example, <code>#a | #b</code> and <code>#a | #a(Int)</code> are allowed but <code>#a(Int) | #a(Bool)</code> aren&rsquo;t.</p>
+<p>Intuitively, <code>T</code> is subtype of a union type <code>U</code> if it is an element of <code>U</code>.
+For instance, <code>#a</code> is subtype of <code>#a | #b</code>.
+Further, a union type <code>T</code> is subtype of another union type <code>U</code> if and only if all elements of <code>T</code> are contained in <code>U</code>.
+For instance, <code>#a | #b</code> is subtype of <code>#a | #b | #c</code>.</p>
+<p>Just like with <code>Any</code>, the type of a value can be widen to a closed union or narrowed to a subtype with <code>@</code> and <code>@!</code>, respectively.</p>
+<pre><code>let x = #a(40) @ #a | #a(Int)
+let main = print((x @! #a(Int)).0 + 2)
+// Prints &quot;42&quot;
+</code></pre>
+<h4><a href="#pattern-matching" id="pattern-matching">Pattern matching</a></h4>
+<p>Pattern is an alternative to downcasting for narrowing a type.</p>
+<pre><code>fun is_anonymous(_ p: #person | #person(name: String)) -&gt; Bool {
+  match p {
+    case #person then true
+    case #person(name: _) then false
+  }
+}
+
+let main = print(is_anonymous(#person(name: &quot;Hannah&quot;)))
+// Prints &quot;false&quot;
+</code></pre>
+<p>In the function above, <code>p</code> is used as the <em>scrutinee</em> of a match expression with two cases.
+Each of these cases is composed of a pattern and an expression.
+At run-time, the first case whose pattern <em>matches</em> the scrutinee is selected to compute the result of the entire match expression.
+For example, a call to <code>is_anonymous(#person(name: &quot;Hannah&quot;))</code> would cause the second case to be selected, resulting in the value <code>false</code>.</p>
+<p>A pattern can test for an exact value or for any value with of a given type.
+For instance, the pattern <code>#person(name: _)</code> in matches any record of type <code>#person(name: String)</code>.
+Here, <code>_</code> is called a wildcard and it can match any value of its type.
+The type of a wildcard can be specified explicitly with <code>@</code>, as in <code>_ @ String</code>.</p>
+<p><em>Note: The compiler can infer that the type of the pattern is <code>#person(name: String)</code> rather than <code>#person(name: Any)</code> by looking at the type of <code>p</code>.</em></p>
+<p>Matched values can be extracted with binding patterns:</p>
+<pre><code>fun name(of p: #person | #person(name: String)) -&gt; #none | #some(String) {
+  match p {
+    case #person then #none
+    case #person(name: let n) then #some(n)
+  }
+}
+</code></pre>
+<p>Bindings can appear anywhere in a pattern.
+Hence, another way to declare the function above is:</p>
+<pre><code>fun name(of p: #person | #person(name: String)) -&gt; #none | #some(String) {
+  match p {
+    case #person then #none
+    case let q: #person(name: String) then #some(q.name)
+  }
+}
+</code></pre>
+<p>Because testing whether a value can be narrowed to a specific type is quite common, it can be expressed more concisely using <code>@?</code>, which returns an option of the form <code>#none | #some(T)</code>.</p>
+<pre><code>fun is_human(_ p: #person | #person(name: String) | #alien(name: String)) -&gt; Bool {
+  (p @? #alien(String)) != #none
+}
+</code></pre>
+<h4><a href="#type-definitions" id="type-definitions">Type definitions</a></h4>
+<p>It is possible to define custom data types.
+For example:</p>
+<pre><code>type Vector2 =
+  #vector2(x: Float, y: Float)
+type Circle =
+  #circle(origin: Vector2, radius: Float)
+type Rectangle =
+  #rectangle(origin: Vector2, dimension: Vector2)
+</code></pre>
+<p>Type definitions can be recursive:</p>
+<pre><code>type List = #empty | #list(head: Any, tail: List)
+let main = print()
+</code></pre>
+
+</main>
+</div>
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/scala.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/swift.min.js"></script>
+<script>hljs.highlightAll();</script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous" onload="renderMathInElement(document.body, {delimiters:[{left:'$$', right:'$$', display: true}, {left:'$', right:'$', display: false}]});"></script>
+</body>
+</html>

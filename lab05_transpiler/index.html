@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Transpiler</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github.min.css" media="screen" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github-dark.min.css" media="screen and (prefers-color-scheme: dark)" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.5.1/github-markdown.min.css">
+  <style>
+	.markdown-body {
+		box-sizing: border-box;
+		min-width: 200px;
+		max-width: 980px;
+		margin: 0 auto;
+		padding: 45px;
+	}
+
+	@media (max-width: 767px) {
+		.markdown-body {
+			padding: 15px;
+		}
+	}
+
+  .snippet pre {
+    margin-bottom: .1em;
+  }
+
+  .snippet-path {
+    font-size: 0.8em;
+    font-style: italic;
+    text-align: right;
+  }
+  </style>
+</head>
+<body class="markdown-body">
+<div id="container">
+<main>
+<p class="updated">Last updated on <time datetime=2024-04-04T15:24:34>Thursday, April 04, 2024</time></p>
+<h1><a href="#lab-04---transpiler" id="lab-04---transpiler">Lab 04 - Transpiler</a></h1>
+<p>In this fourth lab, you will implement a transpiler from Alpine to Scala.
+Recall that a transpiler is a compiler that translates code from one programming language to another language meant to be read and modified by humans.</p>
+<h2><a href="#obtaining-the-lab-files" id="obtaining-the-lab-files">Obtaining the lab files</a></h2>
+<p>As in the previous labs, you can obtain the new lab files by cloning the repository or downloading the ZIP file from Moodle. Two ways to proceed:</p>
+<ul>
+<li><strong>Cloning the repository</strong>: Clone the repository and put back the files you have modified in the previous labs. (<code>src/main/scala/alpine/typing/Typer.scala</code>, <code>src/main/scala/alpine/parser/Parser.scala</code>, <code>src/main/scala/alpine/interpreter/Interpreter.scala</code>).</li>
+<li><strong>Copying only new files</strong>: If you don&rsquo;t want to clone the repository again, you can download the ZIP file from Moodle and copy the new files to your project.</li>
+</ul>
+<p>The new files/updated files are:</p>
+<ul>
+<li><code>scala_rt/*</code></li>
+<li><code>src/main/scala/alpine/driver/Driver.scala</code></li>
+<li><code>src/main/scala/alpine/codegen/ScalaPrinter.scala</code></li>
+<li><code>src/main/scala/Main.scala</code></li>
+<li><code>src/main/scala/symbols/Entities.scala</code></li>
+<li><code>src/main/scala/symbols/EntityReference.scala</code></li>
+<li><code>src/main/scala/symbols/Types.scala</code></li>
+<li><code>src/main/scala/typing/ProofObligations.scala</code></li>
+<li><code>src/main/scala/typing/Typer.scala</code> (please see below.)</li>
+<li><code>src/test/res/*</code> (new folder containing files)</li>
+<li><code>src/test/scala/alpine/transpiler/*</code> (new folder containing files)</li>
+</ul>
+<h3><a href="#typerscala-modification" id="typerscala-modification"><code>Typer.scala</code> modification</a></h3>
+<p>There is an update for the <code>Typer.scala</code> file:</p>
+<pre><code class="language-scala">  private def commit(solution: Solver.Solution, obligations: ProofObligations): Unit =
+    for (n, t) &lt;- obligations.inferredType do
+      val u = solution.substitution.reify(t)
+      val v = properties.checkedType.put(n, u)
+      assert(v.map((x) =&gt; x == u).getOrElse(true))
+
+      // The cache may have an unchecked type for `n` if it's a declaration whose type has been
+      // inferred (i.e., variable in a match case without ascription).
+      properties.uncheckedType.updateWith(n)((x) =&gt; x.map((_) =&gt; Memo.Computed(u)))
+
+    for (n, r) &lt;- solution.binding do
+      val s = symbols.EntityReference(r.entity, solution.substitution.reify(r.tpe))
+      properties.treeToReferredEntity.put(n, s)
+
+    reportBatch(solution.diagnostics.elements)
+    assert(solution.isSound || diagnostics.containsError, &quot;inference failed without diagnostic&quot;)
+</code></pre>
+<p>becomes</p>
+<pre><code class="language-scala">  private def commit(solution: Solver.Solution, obligations: ProofObligations): Unit =
+    for (n, t) &lt;- obligations.inferredType do
+      val u = solution.substitution.reify(t)
+      val v = properties.checkedType.put(n, u)
+      assert(v.map((x) =&gt; x == u).getOrElse(true))
+
+      // The cache may have an unchecked type for `n` if it's a declaration whose type has been
+      // inferred (i.e., variable in a match case without ascription).
+      properties.uncheckedType.updateWith(n)((x) =&gt; x.map((_) =&gt; Memo.Computed(u)))
+
+    for (n, r) &lt;- (obligations.inferredBinding ++ solution.binding) do
+      val s = r.withTypeTransformed((t) =&gt; solution.substitution.reify(t)) // ← This line changes.
+      properties.treeToReferredEntity.put(n, s)
+
+    reportBatch(solution.diagnostics.elements)
+    assert(solution.isSound || diagnostics.containsError, &quot;inference failed without diagnostic&quot;)
+</code></pre>
+<p>and</p>
+<pre><code class="language-scala">  private def bindEntityReference(
+      e: ast.Tree, candidates: List[symbols.EntityReference]
+  )(using context: Typer.Context): Type =
+    candidates match
+      case Nil =&gt;
+        context.obligations.constrain(e, Type.Error)
+      case pick :: Nil =&gt;
+        properties.treeToReferredEntity.put(e, pick)
+        context.obligations.constrain(e, pick.tpe)
+      case picks =&gt;
+        val t = freshTypeVariable()
+        context.obligations.add(Constraint.Overload(e, picks, t, Constraint.Origin(e.site)))
+        context.obligations.constrain(e, t)
+</code></pre>
+<p>becomes</p>
+<pre><code class="language-scala">  private def bindEntityReference(
+      e: ast.Tree, candidates: List[symbols.EntityReference]
+  )(using context: Typer.Context): Type =
+    candidates match
+      case Nil =&gt;
+        context.obligations.constrain(e, Type.Error)
+      case pick :: Nil =&gt;
+        context.obligations.bind(e, pick) // ← This line changes.
+        context.obligations.constrain(e, pick.tpe)
+      case picks =&gt;
+        val t = freshTypeVariable()
+        context.obligations.add(Constraint.Overload(e, picks, t, Constraint.Origin(e.site)))
+        context.obligations.constrain(e, t)
+</code></pre>
+<h2><a href="#test-dependencies" id="test-dependencies">Test dependencies</a></h2>
+<p>The test suite has to compile the generated Scala code for testing, therefore, please make sure that the two commands below work in your shell before starting the lab:</p>
+<pre><code class="language-bash">$ scalac -version
+$ scala -version
+</code></pre>
+<p>If you have installed Scala with Coursier, it should be already set up. If you have installed Scala with another method, you should make sure that these commands work.</p>
+<h2><a href="#transpiling-alpine-to-scala" id="transpiling-alpine-to-scala">Transpiling Alpine to Scala</a></h2>
+<p>Like the interpretation and type checking/inference, transpilation is implemented as a AST traversal using <code>TreeVisitor</code>.
+In a nutshell, the process consists of walking the AST and, for each node, generate Scala code to produce equivalent semantics.</p>
+<p>Most constructs from Alpine have a straightforward equivalent in Scala.
+For example, let&rsquo;s examine how conditional expressions (e.g., <code>if a then b else c</code>), which are processed by <code>visitConditional</code>:</p>
+<pre><code class="language-scala">override def visitConditional(n: ast.Conditional)(using context: Context): Unit =
+  context.output ++= &quot;if &quot;
+  n.condition.visit(this)
+  context.output ++= &quot; then &quot;
+  n.successCase.visit(this)
+  context.output ++= &quot; else &quot;
+  n.failureCase.visit(this)
+</code></pre>
+<p>The construction of the Scala program is done by appending strings to a string buffer named <code>output</code>, which is part of the context in which the AST traversal takes place.</p>
+<blockquote>
+<p>In Scala, using a string buffer is more efficient than concatenating many small strings together to construct a large string.
+You append a new string to the buffer with the operator <code>++=</code>.
+Once it has been constructed, you extract the final by calling <code>toString</code> on the buffer.
+Note that you can extract the contents of the buffer at any time using the same method, which may be useful for debugging in an interactive session or via <code>println</code> statements.</p>
+</blockquote>
+<p>The output of visiting a conditional is therefore the following:</p>
+<pre><code class="language-scala">if &lt;n.condition.visit&gt; then &lt;n.success.visit&gt; else &lt;n.failure.visit&gt;
+</code></pre>
+<p>This code snippet demonstrates the convenience of the visitor pattern.
+One simply has to call the <code>visit</code> method of a sub-tree to transpire its contents into the buffer.
+Hence, most transpilation methods, like <code>visitConditional</code>, read like flat sequences of relatively straightforward statements.</p>
+<p>We provide an incomplete implementation of the <code>ScalaPrinter</code> class.
+Your task is to implement transpilation for <strong>pattern matching</strong>, <strong>records</strong>, <strong>narrowing</strong>, and <strong>widening</strong>, performed by methods <code>visitMatch</code>, <code>visitRecord</code> and <code>visitAscription</code>.</p>
+<p>In this lab, we, on purpose, let you more freedom about how you implement the transpiler. The representation in Scala of the records is up to you. The only specification is that the generated Scala code should implement correctly the behavior of the Alpine code when run.</p>
+<p>But before all of that, a little bit of explanations:</p>
+<h3><a href="#built-in-features-and-runtime-libraries" id="built-in-features-and-runtime-libraries">Built-in features and runtime libraries</a></h3>
+<p>The code generated by compilers is not necessarily standalone, and can therefore depend on some libraries. For instance, Scala has its standard library (e.g. <code>::</code>, …), C has the <code>libc</code> (e.g. <code>printf</code>, <code>strcpy</code>, <a href="https://github.com/bminor/glibc/tree/master/malloc"><code>malloc</code></a> …), Java has the <code>java.lang</code> package, etc&hellip;</p>
+<p>Sometimes, some features of the language are implemented in such standard libraries.</p>
+<p>For instance, throwing exceptions in C++ with <code>gcc</code>:</p>
+<pre><code class="language-cpp">// Throws an exception
+throw &quot;Division by zero&quot;;
+</code></pre>
+<p>is compiled to a call to a runtime function:</p>
+<pre><code class="language-cpp">// Throws an exception
+__cxa_throw(&quot;Division by zero&quot;, &quot;char const*&quot;, 0);
+</code></pre>
+<p>The details are not important but the idea is that the generated code can depend on <em>other</em> code that is not directly generated by the compiler (but is still compiled at some point, as its own program), to support specific features of the language (here, <code>__cxa_throw</code> is a function imported from a library at runtime).</p>
+<p>Alpine also has its standard library that will be shipped with the transpiled code to support some features of the language. For example, this library implement <code>print</code>, <code>+</code>, <code>@</code>, &hellip;</p>
+<p>To summarize,  The transpiler should generate code and <em>can</em> rely on a runtime library that will be available at runtime to implement some features of the language.</p>
+<h3><a href="#issue-1-scala-and-alpine-differences" id="issue-1-scala-and-alpine-differences">Issue #1: Scala and Alpine differences</a></h3>
+<p>Scala and Alpine are two different languages. One of the crucial differences is the presence of <em>labels</em>! In Scala, labels do not exist. In Alpine, they do.</p>
+<p>For instance, in Alpine, you can write:</p>
+<pre><code class="language-swift">fun myFun(_ x: Int) -&gt; Int { 5 }
+fun myFun(a x: Int) -&gt; Int { 10 }
+myFun(2) // 5, calls the 1st function
+myFun(a: 2) // 10, calls the 2nd function
+</code></pre>
+<p>In this case, the two functions are two <strong>different</strong> fucntions.</p>
+<p>The same applies to records. In Alpine, you can write:</p>
+<pre><code class="language-swift">let p = #point(x: 1, y: 2)
+let main = match p {
+  case #point(1, 2) then print(&quot;Unreachable, sorry.&quot;) // not a subtype of #point(x: Int, y: Int)
+}
+</code></pre>
+<p>This means that the translation to Scala cannot be as straightforward than it is for conditional for example. You need to find a way to take these labels into account, and to encode them in some way in the generated Scala code.</p>
+<h3><a href="#your-task" id="your-task">Your task</a></h3>
+<p>Your task is to implement the missing implementations of the <code>visit</code> function, namely for what is related to <strong>records</strong>, <strong>pattern matching</strong>, <strong>narrowing</strong> and, <strong>widening</strong>. If necessary, complete the runtime library to support these new features.</p>
+<h3><a href="#hints" id="hints">Hints</a></h3>
+<ul>
+<li>Check the <em>provided</em> code, as you can take inspiration from existing implementations.</li>
+<li>A record, depending on its arity, is either a <code>case object</code> or a <code>case class</code>.</li>
+<li>The Scala <code>.asInstanceOf[T]</code> and <code>.isInstanceOf[T]</code> methods can be useful.</li>
+<li>You can take inspiration of the functions treatment for records.</li>
+<li>For pattern matching, there is a few cases to consider:</li>
+</ul>
+<pre><code class="language-swift">let p = #point(x: 1, y: 2)
+let xCheck = 1
+let main = match p {
+  case #point(x: xCheck, y: 2) then print(&quot;Correct!&quot;) // executes
+}
+</code></pre>
+<p>But cases such as:</p>
+<pre><code class="language-swift">let p = #point(x: 1, y: 2)
+let xCheck = 1
+let main = match p {
+  case #point(x: xCheck + 1, y: 2) then print(&quot;Correct!&quot;) // executes
+}
+</code></pre>
+<p>are not going to be checked (because of the way the pattern matching is implemented in Scala.)</p>
+<p>A way to do it in Scala would be:</p>
+<pre><code class="language-scala">case class Point(x: Int, y: Int)
+val p = Point(1, 2)
+val xCheck = 1
+val main = p match {
+  case Point(`xCheck`, 2) =&gt; println(&quot;Correct!&quot;)
+}
+</code></pre>
+
+</main>
+</div>
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/scala.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/swift.min.js"></script>
+<script>hljs.highlightAll();</script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous" onload="renderMathInElement(document.body, {delimiters:[{left:'$$', right:'$$', display: true}, {left:'$', right:'$', display: false}]});"></script>
+</body>
+</html>
