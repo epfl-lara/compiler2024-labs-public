@@ -1,4 +1,4 @@
-# Lab 04 - Transpiler
+# Lab 05 - Transpiler
 
 In this fourth lab, you will implement a transpiler from Alpine to Scala.
 Recall that a transpiler is a compiler that translates code from one programming language to another language meant to be read and modified by humans.
