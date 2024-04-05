@@ -3,3 +3,4 @@
 1. [Lab 1: Interpreter](/lab01_interpreter/)
 2. [Lab 2: Parser](/lab02_parser/)
 3. [Lab 3/4: Typer](/lab03_typer/)
+4. [Lab 5: Transpiler](/lab04_transpiler/)
