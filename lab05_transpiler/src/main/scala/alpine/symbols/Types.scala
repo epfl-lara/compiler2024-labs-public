@@ -374,6 +374,11 @@ object Type:
     def fromPair(a: Type.Record, b: Type.Record): Option[Sum] =
       (new Sum(List(a))).inserting(b)
 
+    def from(tpe: Type): Option[Sum] =
+      tpe match
+        case s: Sum => Some(s)
+        case _ => None
+
   end Sum
 
   /** A type symbol with an optional label. */
