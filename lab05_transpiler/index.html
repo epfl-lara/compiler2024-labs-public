@@ -37,7 +37,7 @@
 <body class="markdown-body">
 <div id="container">
 <main>
-<p class="updated">Last updated on <time datetime=2024-04-05T15:42:58>Friday, April 05, 2024</time></p>
+<p class="updated">Last updated on <time datetime=2024-04-17T14:02:59>Wednesday, April 17, 2024</time></p>
 <h1><a href="#lab-05---transpiler" id="lab-05---transpiler">Lab 05 - Transpiler</a></h1>
 <p>In this fourth lab, you will implement a transpiler from Alpine to Scala.
 Recall that a transpiler is a compiler that translates code from one programming language to another language meant to be read and modified by humans.</p>
@@ -53,11 +53,11 @@ Recall that a transpiler is a compiler that translates code from one programming
 <li><code>src/main/scala/alpine/driver/Driver.scala</code></li>
 <li><code>src/main/scala/alpine/codegen/ScalaPrinter.scala</code></li>
 <li><code>src/main/scala/Main.scala</code></li>
-<li><code>src/main/scala/symbols/Entities.scala</code></li>
-<li><code>src/main/scala/symbols/EntityReference.scala</code></li>
-<li><code>src/main/scala/symbols/Types.scala</code></li>
-<li><code>src/main/scala/typing/ProofObligations.scala</code></li>
-<li><code>src/main/scala/typing/Typer.scala</code> (please see below.)</li>
+<li><code>src/main/scala/alpine/symbols/Entities.scala</code></li>
+<li><code>src/main/scala/alpine/symbols/EntityReference.scala</code></li>
+<li><code>src/main/scala/alpine/symbols/Types.scala</code></li>
+<li><code>src/main/scala/alpine/typing/ProofObligations.scala</code></li>
+<li><code>src/main/scala/alpine/typing/Typer.scala</code> (please see below.)</li>
 <li><code>src/test/res/*</code> (new folder containing files)</li>
 <li><code>src/test/scala/alpine/transpiler/*</code> (new folder containing files)</li>
 </ul>
@@ -212,7 +212,7 @@ let main = match p {
 </code></pre>
 <p>But cases such as:</p>
 <pre><code class="language-swift">let p = #point(x: 1, y: 2)
-let xCheck = 1
+let xCheck = 0
 let main = match p {
   case #point(x: xCheck + 1, y: 2) then print(&quot;Correct!&quot;) // executes
 }

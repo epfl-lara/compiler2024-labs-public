@@ -15,11 +15,11 @@ The new files/updated files are:
 - `src/main/scala/alpine/driver/Driver.scala`
 - `src/main/scala/alpine/codegen/ScalaPrinter.scala`
 - `src/main/scala/Main.scala`
-- `src/main/scala/symbols/Entities.scala`
-- `src/main/scala/symbols/EntityReference.scala`
-- `src/main/scala/symbols/Types.scala`
-- `src/main/scala/typing/ProofObligations.scala`
-- `src/main/scala/typing/Typer.scala` (please see below.)
+- `src/main/scala/alpine/symbols/Entities.scala`
+- `src/main/scala/alpine/symbols/EntityReference.scala`
+- `src/main/scala/alpine/symbols/Types.scala`
+- `src/main/scala/alpine/typing/ProofObligations.scala`
+- `src/main/scala/alpine/typing/Typer.scala` (please see below.)
 - `src/test/res/*` (new folder containing files)
 - `src/test/scala/alpine/transpiler/*` (new folder containing files)
 
@@ -232,7 +232,7 @@ But cases such as:
 
 ```swift
 let p = #point(x: 1, y: 2)
-let xCheck = 1
+let xCheck = 0
 let main = match p {
   case #point(x: xCheck + 1, y: 2) then print("Correct!") // executes
 }
