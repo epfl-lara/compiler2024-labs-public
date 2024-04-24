@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Codegen</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github.min.css" media="screen" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github-dark.min.css" media="screen and (prefers-color-scheme: dark)" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.5.1/github-markdown.min.css">
+  <style>
+	.markdown-body {
+		box-sizing: border-box;
+		min-width: 200px;
+		max-width: 980px;
+		margin: 0 auto;
+		padding: 45px;
+	}
+
+	@media (max-width: 767px) {
+		.markdown-body {
+			padding: 15px;
+		}
+	}
+
+  .snippet pre {
+    margin-bottom: .1em;
+  }
+
+  .snippet-path {
+    font-size: 0.8em;
+    font-style: italic;
+    text-align: right;
+  }
+  </style>
+</head>
+<body class="markdown-body">
+<div id="container">
+<main>
+<p class="updated">Last updated on <time datetime=2024-04-23T13:55:34>Tuesday, April 23, 2024</time></p>
+<h1><a href="#lab-06---compiler-wasm" id="lab-06---compiler-wasm">Lab 06 - Compiler WASM</a></h1>
+<p>In this fifth lab, you will implement the code generation phase to generate WebAssembly.
+Recall that a transpiler is a compiler that translates code from one programming language to another language meant to be read and modified by humans. In this case, WebAssembly is not meant to be read or modified by humans, therefore, we use the name compiler instead.</p>
+<h2><a href="#obtaining-the-lab-files" id="obtaining-the-lab-files">Obtaining the lab files</a></h2>
+<p>As usual, you can obtain the lab files from the course&rsquo;s Git repository or from the zip archive on Moodle. Then, copy the following files into your project:</p>
+<pre><code class="language-console">alpine/
+├── src/
+│   ├── main/
+│   │   ├── scala/
+│   │   │   ├── alpine/
+│   │   │   │   ├── driver/                   &lt;----- COPY FROM THIS WEEK FILES
+│   │   │   │   ├── evaluation/
+│   │   │   │   ├── parsing/
+│   │   │   │   ├── util/
+│   │   │   |   ├── codegen/                 
+│   │   │   |   |   ├── CodeGenerator.scala   &lt;----- COPY FROM THIS WEEK FILES
+│   │   │   |   ├── wasm/                     &lt;----- COPY FROM THIS WEEK FILES
+│   │   │   ├── Main.scala                    &lt;----- COPY FROM THIS WEEK FILES (replace the current one)
+├── test/
+|   ├── res/
+|   │   ├── codegen/                          &lt;----- COPY FROM THIS WEEK FILES
+│   ├── scala/
+│   │   ├── alpine/
+|   |   |   ├── codegen/                      &lt;----- COPY FROM THIS WEEK FILES
+│   │   │   ├── evaluation/
+│   │   │   ├── parsing/                      
+|   |   |   ├── transpiler/
+|   |   |   |   ├── TranspilerTests.scala     &lt;----- COPY FROM THIS WEEK FILES (to run this week's tests with the Transpiler)
+│   │   │   ├── util/                         
+├── wasm/                                     &lt;----- COPY FROM THIS WEEK FILES
+</code></pre>
+<h3><a href="#dependencies" id="dependencies">Dependencies</a></h3>
+<h4><a href="#test-dependencies-nodejs-and-npm" id="test-dependencies-nodejs-and-npm">Test dependencies: Node.JS and NPM</a></h4>
+<p>To be able to run WebAssembly code, you need to have the proper environment installed, including the WebAssembly virtual machine.</p>
+<p>It is required to have the following dependencies installed in your system:</p>
+<ul>
+<li><a href="https://nodejs.org/en/download/">Node.js</a>, with the latest LTS version (20)
+<ul>
+<li>On Windows, use the installer</li>
+<li>On Linux, macOS, or Chocolatey, use <a href="https://nodejs.org/en/download/package-manager">Download Node.JS</a></li>
+</ul>
+</li>
+</ul>
+<p>To ensure that Node.js is properly installed, run the following command in your terminal, which should print a version number:</p>
+<pre><code class="language-bash">node -v
+</code></pre>
+<p>You will also need <em>Node Package Manager</em> (npm).
+npm is usually bundled with Node.js and should be installed if you followed the instructions above.
+To ensure that it is properly installed, run the following command in your terminal, which should print a version number:</p>
+<pre><code class="language-bash">npm -v
+</code></pre>
+<p>If you decide to install Node.js with another technique (e.g. that may be specific to your Linux distribution), make sure that npm is installed as well.</p>
+<h4><a href="#test-dependencies-wat2wasm" id="test-dependencies-wat2wasm">Test dependencies: <code>wat2wasm</code></a></h4>
+<p>You will also need the <code>wat2wasm</code> tool to compile WebAssembly text files to binary files.
+<code>wat2wasm</code> is part of a WebAssembly Development toolkit named <code>wabt</code>. To install it, please follows the instructions on the <a href="&quot;https://github.com/WebAssembly/wabt&quot;">official GitHub repository</a>.</p>
+<p>Make sure that wat2wasm is properly installed by running the following command, which should print a version number:</p>
+<pre><code class="language-bash">wat2wasm --version
+</code></pre>
+<h4><a href="#debugging-dependency-chromechromium-recommended" id="debugging-dependency-chromechromium-recommended">Debugging dependency: Chrome/Chromium (recommended)</a></h4>
+<p>Consider using Chrome and Chromium, as they offer a good debugging experience for WebAssembly.</p>
+<p>Any other browser/code editor/IDE that supports WebAssembly debugging can be used (e.g. VSCode).</p>
+<h2><a href="#web-assembly-introduction" id="web-assembly-introduction">Web Assembly introduction</a></h2>
+<p>WebAssembly is a binary instruction format for a stack-based virtual machine.</p>
+<h3><a href="#instructions" id="instructions">Instructions</a></h3>
+<p>The instructions are defined in the <code>WasmTree.scala</code> provided file. Usually, instructions are represented as a string, e.g. <code>i32.add</code> to add two 32-bit integers.</p>
+<p>A list of instructions along with its documentation is given in the same file.</p>
+<p>As an example, this WASM program adds two numbers (note that <code>;</code> is use to start comments):</p>
+<pre><code class="language-wasm">; empty stack
+i32.const 1 ; pushes 1 to the stack
+; stack = [1]
+i32.const 2 ; pushes 2 to the stack
+; stack = [1, 2]
+i32.add     ; pops two values from the stack, adds them, and pushes the result
+; stack = [3]
+</code></pre>
+<p>We will only use a subset of the instructions in this lab, namely the floating points, integer arithmetic operations &ndash; 32 and 64-bits &ndash; and linear memory.</p>
+<p>We recommend that you read <code>WasmTree.scala</code> to understand WebAssembly instructions.</p>
+<h3><a href="#functions" id="functions">Functions</a></h3>
+<p>WASM supports functions, which are defined by a sequence of instructions, local types (if any) and the return type (if any).</p>
+<p>As an example, this WASM program defines a function that adds two numbers:</p>
+<pre><code class="language-wasm">(func $add (param i32 i32) (result i32)
+  local.get 0
+  local.get 1
+  i32.add
+)
+</code></pre>
+<p>Its equivalent representation in the provided WASM Scala tree would be:</p>
+<pre><code class="language-scala">FunctionDefinition(&quot;add&quot;, params = List(I32, I32), returnType = Some(I32), body =
+  List(
+    LocalGet(0),
+    LocalGet(1),
+    IAdd
+  )
+)
+</code></pre>
+<h4><a href="#return-type" id="return-type">Return type</a></h4>
+<p>The return type annotation of a function is optional in WebAssembly: if no annotation is given, the function returns nothing on the stack (in other words, it is equivalent to a function returning <code>Void</code> or <code>Nothing</code> in Scala).
+That is why the return type of functions in the Scala tree is an <code>Option</code>.
+If the WebAssembly function isn&rsquo;t supposed to return anything, its return type in the Scala tree should be <code>None</code>.</p>
+<p>If the function returns a value, the return type is <code>Some(type)</code>, where <code>type</code> is the type of the return value (i.e., <code>I32</code>, <code>F32</code>, <code>I64</code>, or <code>F64</code>).</p>
+<p>If it returns something, the function should end with only a single element of the specified type on the stack.</p>
+<p>If it should return nothing, it should return with an empty stack.</p>
+<h4><a href="#calling-functions" id="calling-functions">Calling functions</a></h4>
+<p>For a function <code>f</code>, having <code>n</code> parameters,</p>
+<pre><code class="language-scala">// expects n parameters on the stack
+// stack = prev ++ [param1, param2, …, paramn]
+Call(&quot;f&quot;)
+// if f returns a value, the stack will be prev ++ [result]
+// if f returns nothing, the stack will be prev
+</code></pre>
+<h4><a href="#locals" id="locals">Locals</a></h4>
+<p>Locals are variables that are only accessible within the function. They can be get/set by the <code>local.get</code> and <code>local.set</code> instructions.</p>
+<pre><code class="language-scala">FunctionDefinition(&quot;util&quot;, locals = List(I32, I32) body =
+//                            first local ↑    ↑ second local
+  List(
+    // stack = []
+    IConst(42),
+    // stack = [42]
+    LocalSet(0), // sets the first local
+    // stack = []
+    LocalGet(0), // gets the first local
+    // stack = [42]
+    Call(&quot;print&quot;), // prints the value
+    // stack = []
+  )
+)
+</code></pre>
+<p>Parameters of a function are also locals. The accessing order is first params in order, then locals.</p>
+<h4><a href="#main-function" id="main-function">Main function</a></h4>
+<p>The runtime expects a function named <code>main</code> that does not take any parameters and can possibly return a value.</p>
+<p>Such a function can be defined as follows in the provided WASM Scala tree:</p>
+<pre><code class="language-scala">MainFunction(body = …, returnType = …)
+</code></pre>
+<p>It is <strong>mandatory</strong> to use that case class to define the main function because it needs to be exported as <code>main</code>, and NOT defining a normal function named <code>main</code>. It is also mandatory to define at least a main function.</p>
+<h3><a href="#modules" id="modules">Modules</a></h3>
+<p>A WASM module is a collection of functions and imports. The module is the top-level structure of a WASM program.</p>
+<p>In our case, we will only use the <code>FunctionDefinition</code>, <code>ImportFromModule</code> and <code>ImportMemory</code>.</p>
+<p>We will generate a single WASM module that contains all functions and imports of the Alpine program.</p>
+<h3><a href="#importfrommodule" id="importfrommodule"><code>ImportFromModule</code></a></h3>
+<p>WASM allows to import functions. A module can be a WASM file or a JavaScript file.</p>
+<p>The idea is similar to the  <code>rt</code>/<code>runtime</code> module that we used in the previous lab. The WASM file is going to be ran in a JavaScript environment, and we can import functions from the JavaScript environment, e.g. <code>print-int</code>.</p>
+<p>As a reference, you can use the following list of imports:</p>
+<pre><code class="language-scala">Module(
+  List(
+    // Import `api.print` as `print`, a function that takes an integer and returns nothing (prints a number)
+    ImportFromModule(&quot;api&quot;, &quot;print&quot;, &quot;print&quot;, List(I32), None),
+    // Import `api.print` as `fprint`, a function that takes a float and returns nothing (prints a floating point)
+    ImportFromModule(&quot;api&quot;, &quot;print&quot;, &quot;fprint&quot;, List(F32), None),
+    // Import `api.print-char` as `print-char`, a function that takes an integer and returns nothing (prints a character)
+    ImportFromModule(&quot;api&quot;, &quot;print-char&quot;, &quot;print-char&quot;, List(I32), None),
+    // Import the linear memory
+    ImportMemory(&quot;api&quot;, &quot;mem&quot;, 100)
+  ),
+  List(… functions …)
+)
+</code></pre>
+<h3><a href="#linear-memory" id="linear-memory">Linear memory</a></h3>
+<p>WASM supports linear memory, which means that the memory the program can access is a contiguous array of bytes. The program uses this memory to store data that is not on the stack (more commonly known as a heap).</p>
+<p>For instance, to store the number <code>0xdeadbeef</code> at location 0 of the linear memory, you would use the following piece of code:</p>
+<pre><code class="language-wasm">i32.const 0 ; index
+i32.const 0xdeadbeef
+i32.store
+</code></pre>
+<p>which in the provided WASM tree would be:</p>
+<pre><code class="language-scala">List(
+  I32Const(0),
+  I32Const(0xdeadbeef),
+  IStore
+)
+</code></pre>
+<p>Please note a few things:</p>
+<ul>
+<li>the memory is addressed in <strong>bytes</strong>, so you need to compute the correct index by using the sizes of the elements you are storing (e.g. 4 bytes for an <code>i32</code>).</li>
+<li>WASM is little endian (meaning that the least significant byte is stored first). For instance, with the above example, the memory would contain:</li>
+</ul>
+<pre><code class="language-js">mem[0] = 0xef
+mem[1] = 0xbe
+mem[2] = 0xad
+mem[3] = 0xde
+</code></pre>
+<p>If you now decide to store <code>0x12345678</code> at index 1, the memory would now contain:</p>
+<pre><code class="language-js">mem[0] = 0xef
+mem[1] = 0x78
+mem[2] = 0x56
+mem[3] = 0x34
+mem[4] = 0x12
+</code></pre>
+<p>Hence, printing an 32-bits integer from the memory at index 0 would print <code>0x345678ef</code> (index 0 is the least significant byte and at index 3 is the most significant byte).</p>
+<p>This is particulary important while debugging.</p>
+<h3><a href="#example-program" id="example-program">Example program</a></h3>
+<p>Here is an example of a program:</p>
+<pre><code class="language-scala">  val module = Module(
+    List(
+      // Importing as specified above
+      ImportFromModule(&quot;api&quot;, &quot;print&quot;, &quot;print&quot;, List(I32), None),
+      ImportFromModule(&quot;api&quot;, &quot;print&quot;, &quot;fprint&quot;, List(F32), None),
+      ImportMemory(&quot;api&quot;, &quot;mem&quot;, 100),
+      // An extra function to print a character
+      ImportFromModule(&quot;api&quot;, &quot;print-char&quot;, &quot;print-char&quot;, List(I32), None),
+      // An extra function to show the memory, at a specific index
+      ImportFromModule(&quot;api&quot;, &quot;show-memory&quot;, &quot;show-memory&quot;, List(I32), None)
+    ),
+    List(
+      FunctionDefinition(&quot;heap-test&quot;, body =
+        List(
+          // Stores 0xdeadbeef at index 0
+          IConst(0),
+          IConst(0xdeadbeef),
+          IStore,
+          // Shows the memory at index 0
+          IConst(0),
+          Call(&quot;show-memory&quot;),
+          // Stores 0x12345678 at index 4
+          IConst(4),
+          IConst(0x12345678),
+          IStore,
+          // Shows the memory at index 4
+          IConst(4),
+          Call(&quot;show-memory&quot;),
+          
+        )
+      ),
+      FunctionDefinition(&quot;local-test&quot;, locals = List(F32, F32), returnType = Some(F32), body =
+        List(
+          FConst(3.14),
+          // stack = [3.14]
+          LocalSet(0),
+          // Local 0 = 3.14
+          // stack = []
+          FConst(1.67),
+          // stack = [1.67]
+          LocalSet(1),
+          // stack = []
+          // Local 1 = 1.67
+          LocalGet(0),
+          // stack = [3.14]
+          LocalGet(1),
+          // stack = [3.14, 1.67]
+          FSub
+          // stack = [1.47]
+          // In fact it returns 1.470000147819519 because of numerical imprecision
+          // of 32-bit floating points
+        )
+      ),
+      MainFunction(
+        List(
+          IConst(1),
+          // stack = [1]
+          IConst(2),
+          // stack = [1, 2]
+          IAdd,
+          // stack = [3]
+          Call(&quot;print&quot;),
+          // stack = []
+          // prints 3
+          Call(&quot;heap-test&quot;),
+          // Printed
+          // Heap[0] = 0xdeadbeef
+          // Heap[0] = 0x345678ef
+          Call(&quot;local-test&quot;),
+          // stack = [1.47] / [1.470000147819519]
+          Call(&quot;fprint&quot;),
+          // stack = []
+          // prints 1.47 / 1.470000147819519
+          IConst(0x41),
+          // stack = [65] (ASCII code of 'A')
+          Call(&quot;print-char&quot;),
+          // stack = []
+          FConst(-1.5) // returns -1.5
+        ),
+        // Return type is F32
+        Some(F32)
+      )
+    )
+  )
+</code></pre>
+<h3><a href="#compiling" id="compiling">Compiling</a></h3>
+<p>WebAssembly can be represented in files in text format (<code>.wat</code>) or binary format (<code>.wasm</code>). Our runtime expects the binary format. Inside SBT, you can run:</p>
+<pre><code class="language-bash">run &lt;path-to-alpine-file&gt;
+</code></pre>
+<p>which would generate an <code>output.wasm</code> file and <code>output.wat</code> file.</p>
+<h3><a href="#running-using-nodejs" id="running-using-nodejs">Running using Node.JS</a></h3>
+<p>To run the WebAssembly program with Node.JS, you can directly use the Alpine compiler. To run the program, run the following command in an SBT shell:</p>
+<pre><code class="language-bash">run -r &lt;path-to-alpine-file&gt;
+</code></pre>
+<p>Alternatively, you can directly run the WebAssembly program from the <code>.wasm</code> by calling Node.JS:</p>
+<pre><code class="language-bash">node ./wasm/node-runner.js ./output.wasm
+</code></pre>
+<h3><a href="#running-using-the-browser" id="running-using-the-browser">Running using the browser</a></h3>
+<p>To run the WebAssembly program in the browser, you can use the provided <code>wasm/index.html</code> file. You can open it in your browser.</p>
+<p>Select the file <code>output.wasm</code> and click on “Run”. The log will be displayed on the page.</p>
+<h3><a href="#debugging-the-webassembly-file-with-nodejs-and-using-chromechromium-developer-tools" id="debugging-the-webassembly-file-with-nodejs-and-using-chromechromium-developer-tools">Debugging the WebAssembly file with Node.JS and using Chrome/Chromium developer tools</a></h3>
+<p>Inside SBT, run:</p>
+<pre><code>run -d &lt;path-to-alpine-file&gt;
+</code></pre>
+<p>or directly with node</p>
+<pre><code>node ./wasm/node-runner.js ./output.wasm wait-for-debugger
+</code></pre>
+<p>The following message will be displayed:</p>
+<pre><code>Seems like you want to debug this. Attach your debugger. I am waiting (^-^)/
+Debugger listening on ws://127.0.0.1:9229/00a71467-1c5c-4052-8dac-b9e5f1be42fc
+For help, see: https://nodejs.org/en/docs/inspector
+</code></pre>
+<p>Open Chrome/Chromium and go to <code>chrome://inspect</code>.</p>
+<p><img src="img/chromeinspect.png" alt="Chrome inspect" /></p>
+<p>Click on “inspect” at the bottom.</p>
+<p><img src="img/chromedebug.png" alt="Chrome debug" /></p>
+<p>You can then press twice “Step into the next function call” to get inside the WebAssembly code (<kbd>F11</kbd>). Then it is just like a normal debugger.</p>
+<h3><a href="#debugging-the-webassembly-file-with-nodejs-and-visual-studio-code" id="debugging-the-webassembly-file-with-nodejs-and-visual-studio-code">Debugging the WebAssembly file with Node.JS and Visual Studio Code</a></h3>
+<p>Alternatively, you can use Visual Studio Code to debug the WebAssembly file.</p>
+<p>Here is an example of <code>.vscode/launch.json</code> config file:</p>
+<pre><code class="language-json">{
+  &quot;version&quot;: &quot;0.2.0&quot;,
+  &quot;configurations&quot;: [
+    {
+      &quot;type&quot;: &quot;node&quot;,
+      &quot;request&quot;: &quot;launch&quot;,
+      &quot;name&quot;: &quot;Run WASMs&quot;,
+      &quot;skipFiles&quot;: [
+        &quot;&lt;node_internals&gt;/**&quot;
+      ],
+      &quot;program&quot;: &quot;${workspaceFolder}/wasm/node-runner.js&quot;,
+      &quot;args&quot;: [&quot;${workspaceFolder}/output.wasm&quot;]
+    }
+  ]
+}
+</code></pre>
+<h3><a href="#debugging-the-webassembly-file-with-another-browser" id="debugging-the-webassembly-file-with-another-browser">Debugging the WebAssembly file with another browser</a></h3>
+<p>To debug the WebAssembly file in the browser, open the developer tools (<kbd>F12</kbd>) then click on the “Run” button.</p>
+<p>You can then press twice “Step into the next function call” to get inside the WebAssembly code (<kbd>F11</kbd>). Then it is just like a normal debugger.</p>
+<h2><a href="#task" id="task">Task</a></h2>
+<p>Your task is to implement the <code>CodeGenerator</code> class in the <code>CodeGenerator.scala</code> file.</p>
+<p>You will only implement the code generator for a subset of the Alpine language, namely:</p>
+<ul>
+<li>Primitive data-types (int, float)</li>
+<li>Top-level bindings
+<ul>
+<li>Functions (<code>fun</code>)</li>
+<li>Expressions (<code>let</code>)</li>
+</ul>
+</li>
+<li>Records expressions</li>
+<li>Function calls</li>
+<li>If expressions</li>
+</ul>
+<p>In particular, the will be no support for <strong>lambda</strong>s.</p>
+<p>You are free to implement the code generator as you wish, but we strongly recommend to use the same approach as the previous labs, i.e., using a tree visitor.</p>
+<h3><a href="#tests" id="tests">Tests</a></h3>
+<p>If you want to run the Codegen tests with the Scala transpiler for debug reasons, you can uncomment the two lines in the <code>TranspilerTests.scala</code> file.</p>
+
+</main>
+</div>
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/scala.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/swift.min.js"></script>
+<script>hljs.highlightAll();</script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous" onload="renderMathInElement(document.body, {delimiters:[{left:'$$', right:'$$', display: true}, {left:'$', right:'$', display: false}]});"></script>
+</body>
+</html>
