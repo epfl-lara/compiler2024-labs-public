@@ -24,7 +24,7 @@ object Wasm:
     val logger = ProcessLogger(x => output.append(f"$x\n"), x => err.append(f"$x\n")) // Ignoring stderr
     val process = Process(f"$node ./wasm/node-runner.js $wasm").run(logger)
     val exitValue = process.exitValue()
-    val stdout = output.toString.split("\n").toList.filter(_.contains("WASM returned: ")).map(_.replace("WASM returned: ", ""))
+    val stdout = output.toString.split("\n").toList.filterNot(_.contains("WASM returned: "))
     val stderr = err.toString.split("\n").toList
     (exitValue, stdout, stderr)
 
