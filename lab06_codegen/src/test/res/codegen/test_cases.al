@@ -95,11 +95,11 @@ let main = if ((1 + 1) == 2) then print(42) else print(43)
 //END
 
 //BEGIN If expression should evaluate the branch correctly (1pt)
-fun f() -> Float { 12.3 }
+fun f() -> Float { 12.5 }
 let main = if true then print(f()) else print(43)
 
 //OUT
-12.3
+12.5
 //END
 
 //BEGIN Function call with no arguments should work (1pt)
