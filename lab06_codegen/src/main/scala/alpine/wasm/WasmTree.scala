@@ -24,7 +24,7 @@ object WasmTree:
         indent(")")
 
   // --- Imports --------------------------------------------------------------
-  sealed trait Import extends DepthFormattable
+  trait Import extends DepthFormattable
 
   /** Imports a function from the environment */
   case class ImportFromModule(
@@ -51,7 +51,7 @@ object WasmTree:
     )
 
   // --- Function ------------------------------------------------------------
-  sealed trait Function extends DepthFormattable
+  trait Function extends DepthFormattable
 
   /** A function definition, not exported. */
   case class FunctionDefinition(
@@ -88,14 +88,14 @@ object WasmTree:
     def mkString(using Depth) = indent(instName)
 
   /** Instruction of the form `instName arg`. */
-  sealed trait UnaryInstruction[T <: Formattable](
+  trait UnaryInstruction[T <: Formattable](
       val instName: String,
       val arg: T
   ) extends Instruction:
     def mkString(using Depth) = indent(f"$instName ${arg.mkString}")
 
   /** A general if instruction. */
-  sealed trait IfInstruction(
+  trait IfInstruction(
       val instName: String,
       val `then`: List[Instruction],
       val `else`: Option[List[Instruction]]
@@ -112,7 +112,7 @@ object WasmTree:
       ).filter(!_.isEmpty()).mkString("\n")
 
   /** A general block instruction. */
-  sealed trait BlockInstruction(
+  trait BlockInstruction(
       val instName: String,
       val blockLabel: FormattableLabel,
       val instructions: List[Instruction]
@@ -218,6 +218,10 @@ object WasmTree:
   case object IStore extends SimpleInstruction("i32.store")
   /** Loads an i32 from memory. Memory address is on the stack. */
   case object ILoad extends SimpleInstruction("i32.load")
+  /** Stores an f32 to memory. Memory address and value are on the stack. */
+  case object FStore extends SimpleInstruction("f32.store")
+  /** Loads an f32 from memory. Memory address is on the stack. */
+  case object FLoad extends SimpleInstruction("f32.load")
 
   // Byte memory
   /**
@@ -266,7 +270,7 @@ object WasmTree:
 
   // Formattables
   /** Formattable with an identation level. */
-  sealed trait DepthFormattable:
+  trait DepthFormattable:
     def mkString(using Depth): String
 
   /** Formattable with a string representation. */

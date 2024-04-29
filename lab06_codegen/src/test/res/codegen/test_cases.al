@@ -5,11 +5,11 @@ let main = print(42)
 42
 //END
 
-//BEGIN Print 42.1 should print 42.1 (1pt)
-let main = print(42.1)
+//BEGIN Print 42.5 should print 42.5 (1pt)
+let main = print(42.5)
 
 //OUT
-42.1
+42.5
 //END
 
 //BEGIN Printing the content of a top level let should print the value (1pt)
@@ -31,15 +31,15 @@ let main = print(f())
 //END
 
 //BEGIN Printing a value in a record, indexed by index, should print the value (2pts)
-let r = #record(12.1, 42)
+let r = #record(12.5, 42)
 let main = print(r.0)
 
 //OUT
-12.1
+12.5
 //END
 
 //BEGIN Printing a value in a record, indexed by name, should print the value (2pts)
-let r = #record(id:12.1, age:42)
+let r = #record(id:12.5, age:42)
 let main = print(r.age)
 
 //OUT
@@ -48,7 +48,7 @@ let main = print(r.age)
 
 
 //BEGIN Accessing a field of a record inside a record should work (2pts)
-let r = #record(id:12.1, age:42)
+let r = #record(id:12.5, age:42)
 let r2 = #record(r)
 let r3 = r2.0
 let main = print(r3.age)
@@ -103,11 +103,11 @@ let main = if true then print(f()) else print(43)
 //END
 
 //BEGIN Function call with no arguments should work (1pt)
-fun f() -> Float { 42.1 }
+fun f() -> Float { 42.5 }
 let main = print(f())
 
 //OUT
-42.1
+42.5
 //END
 
 //BEGIN Function call with arguments should work (1pt)
@@ -120,7 +120,7 @@ let main = print(f(x: 1, y: 2))
 
 //BEGIN Function call with record arguments should work (1pt)
 fun getAge(r: #person(id: Float, age: Int)) -> Int {r.age}
-let main = print(getAge(r: #person(id: 12.1, age: 46)))
+let main = print(getAge(r: #person(id: 12.5, age: 46)))
 
 //OUT
 46
@@ -128,7 +128,7 @@ let main = print(getAge(r: #person(id: 12.1, age: 46)))
 
 //BEGIN Function call with record arguments from toplevel let should work (1pt)
 fun getAge(r: #person(id: Float, age: Int)) -> Int {r.age}
-let p = #person(id: 12.1, age: 47)
+let p = #person(id: 12.5, age: 47)
 let main = print(getAge(r: p))
 
 //OUT
